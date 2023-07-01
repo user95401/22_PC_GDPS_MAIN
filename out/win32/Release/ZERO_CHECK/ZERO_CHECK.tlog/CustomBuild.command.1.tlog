@@ -1,0 +1,10 @@
+^C:\USERS\LENOVO\SOURCE\22_PC_GDPS_MAIN\OUT\CMAKEFILES\F0B75044B160653CDC08333B76C34629\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Lenovo/source/22_PC_GDPS_MAIN -BC:/Users/Lenovo/source/22_PC_GDPS_MAIN/out --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/Lenovo/source/22_PC_GDPS_MAIN/out/22_PC_GDPS_MAIN.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
