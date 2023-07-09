@@ -2,7 +2,7 @@
 //
 #include "22_PC_GDPS_MAIN.h"
 
-const char* version = "1.9";
+const char* version = "1.9.1";
 
 using namespace cocos2d;
 using namespace cocos2d::extension;
@@ -13,8 +13,8 @@ bool idontgiveashitbro = false;
 bool isSwingCopterMode = false;
 int oldShipIcon;
 
-GJGroundLayer* bottomGround; // 0x38C
-GJGroundLayer* topGround; // 0x390
+PlayLayer* PlayLayerFromINit;
+bool shouldPlaySpeedParticle = true;
 
 class idontgiveashit {
 public:
@@ -96,6 +96,7 @@ bool __fastcall PlayLayer_levelComplete_H(PlayLayer* self) {
 inline bool(__thiscall* PlayLayer_init)(PlayLayer*, GJGameLevel*);
 bool __fastcall PlayLayer_init_H(PlayLayer* self, int edx, GJGameLevel* level) {
     if (!PlayLayer_init(self, level)) return false;
+    PlayLayerFromINit = (PlayLayer*)self;
     auto gm = gd::GameManager::sharedState();
     //smoothFix
     if (gm->getGameVariable("0023") == true) {
@@ -119,12 +120,6 @@ void __fastcall PlayLayer_resetLevel_H(PlayLayer* self) {
         GameManager::sharedState()->setPlayerShip(GameManager::sharedState()->getIntGameVariable("oldShipIcon"));//bring up by oldShipIcon
     }
     isSwingCopterMode = false;
-
-    bottomGround = self->m_bottomGround; // 0x38C
-    topGround = self->m_topGround; // 0x390
-
-    topGround->setVisible(true);
-    bottomGround->setVisible(true);
 }
 
 inline PlayLayer* (__cdecl* PlayLayer_onQuit)(PlayLayer*);
@@ -135,6 +130,18 @@ void __fastcall PlayLayer_onQuit_H(PlayLayer* self) {
         GameManager::sharedState()->setPlayerShip(GameManager::sharedState()->getIntGameVariable("oldShipIcon"));//bring up by oldShipIcon
     }
     isSwingCopterMode = false;
+}
+
+inline void(__thiscall* animateInGround)(PlayLayer*, bool idk);//0x209b20
+void __fastcall animateInGround_H(PlayLayer* self, void*, bool idk) {
+    //if(!PlayerObj->m_lastActivatedPortal->m_bIsGroupParent) 
+        animateInGround(self , idk);
+}
+
+inline void(__thiscall* animateOutGround)(PlayLayer*, bool idk);//0x209e60
+void __fastcall animateOutGround_H(PlayLayer* self, void*, bool idk) {
+    //if(!PlayerObj->m_lastActivatedPortal->m_bIsGroupParent) 
+    animateOutGround(self, idk);
 }
 
 static inline void update_swing_copter(gd::PlayerObject* __this, const float delta) {
@@ -159,7 +166,6 @@ static inline void update_swing_copter(gd::PlayerObject* __this, const float del
         __this->flipGravity(!__this->m_isUpsideDown, true);
     }
 }
-
 void(__thiscall* updateJump) (gd::PlayerObject* __this, float delta);
 void  __fastcall  updateJump_H(gd::PlayerObject* __this, void*) {
     auto delta = 0.f;
@@ -178,6 +184,11 @@ void __fastcall PlayerObject_ringJump_H(gd::PlayerObject* self, int, gd::GameObj
         if (ring->m_bHasBeenActivated && ring->m_nEditorLayer2 != 1) self->spiderTestJump(true);
         if (ring->m_nEditorLayer2 == 1) self->spiderTestJump(true);
     }
+}
+
+inline void(__thiscall* PlayerObject_update)(PlayerObject* self, float);
+void __fastcall PlayerObject_update_H(PlayerObject* self, void*, float dtidk) {
+    PlayerObject_update(self, dtidk);
 }
 
 inline void(__thiscall* GameObject_activateObject)(GameObject*, PlayerObject*);
@@ -202,16 +213,16 @@ void __fastcall GameObject_activateObject_H(GameObject* self, int, PlayerObject*
     }
     //noGround
     if (self->m_nObjectType == kGameObjectTypeShipPortal || self->m_nObjectType == kGameObjectTypeCubePortal || self->m_nObjectType == kGameObjectTypeBallPortal || self->m_nObjectType == kGameObjectTypeUfoPortal || self->m_nObjectType == kGameObjectTypeWavePortal || self->m_nObjectType == kGameObjectTypeRobotPortal || self->m_nObjectType == kGameObjectTypeSpiderPortal) {
-        if (self->m_bIsGroupParent) {
-            topGround->setVisible(false);
-            bottomGround->setVisible(false);
-        }
-        else {
-            topGround->setVisible(true);
-            bottomGround->setVisible(true);
-        }
+        if (self->m_bIsGroupParent && player->m_isInPlayLayer) animateOutGround(PlayLayerFromINit, false);
     }
 }
+
+/*inline void(__thiscall* triggerActivated)(GameObject*, float idk);//0xE5D30
+void __fastcall triggerActivated_H(GameObject* self, void*, float idk) {
+    if (!self->m_bIsGroupParent) triggerActivated(self, idk);
+    //speed objects lol
+    //MessageBoxA(nullptr, std::to_string(idk).c_str(), __func__, MB_ICONINFORMATION | MB_OK);
+}*/
 
 inline void(__thiscall* GameObject_customSetup)(GameObject*);
 void __fastcall GameObject_customSetup_H(GameObject* self, int) {
@@ -503,8 +514,8 @@ bool __fastcall LevelEditorLayer_init_H(LevelEditorLayer* self, int edx, GJGameL
     CCLayerColor* THE_LINE = CCLayerColor::create({ 255,255,255,55 });
     THE_LINE->setAnchorPoint({ 0.f,0.f });
     THE_LINE->setPosition({ 0, CCDirector::sharedDirector()->getScreenTop() - 115 });
-    THE_LINE->setScaleX({ 50 }); THE_LINE->setScaleY({ 0.003f });
-    self->addChild(THE_LINE, -100);
+    THE_LINE->setScaleX({ 50 }); THE_LINE->setScaleY({ 0.002f });
+    self->addChild(THE_LINE, -1);
     return true;
 }
 
@@ -661,8 +672,8 @@ CCLabelBMFont* CCLabelBMFont_create_H(const char* str, const char* fntFile) {
         CCPoint point = ModUtils::getCenterPoint();
         //org-455
         lbl->runAction(CCRepeatForever::create(CCSequence::create(
-            CCDelayTime::create(3.0), CCMoveTo::create(0.0, { (point.x + 69), (point.y - 134) - 455 }),
-            CCDelayTime::create(3.0), CCMoveTo::create(0.0, { (point.x + 69), (point.y - 134) })
+            CCDelayTime::create(2.0), CCMoveTo::create(0.0, { (point.x + 69), (point.y - 134) - 455 }),
+            CCDelayTime::create(2.0), CCMoveTo::create(0.0, { (point.x + 69), (point.y - 134) })
             , nullptr)));
         return lbl;
     }
@@ -673,8 +684,8 @@ CCLabelBMFont* CCLabelBMFont_create_H(const char* str, const char* fntFile) {
         CCPoint point = ModUtils::getCenterPoint();
         //org-455
         lbl->runAction(CCRepeatForever::create(CCSequence::create(
-            CCDelayTime::create(3.0), CCMoveTo::create(0.0, { (point.x + 0.f), (point.y + 138.f) - 439.5f }),
-            CCDelayTime::create(3.0), CCMoveTo::create(0.0, { (point.x + 0.f), (point.y + 138.f) })
+            CCDelayTime::create(2.0), CCMoveTo::create(0.0, { (point.x + 0.f), (point.y + 138.f) - 439.5f }),
+            CCDelayTime::create(2.0), CCMoveTo::create(0.0, { (point.x + 0.f), (point.y + 138.f) })
             , nullptr)));
         return lbl;
     }
@@ -693,6 +704,7 @@ DWORD WINAPI thread_func(void* hModule) {
     auto base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
     auto libcocos2d = (DWORD)GetModuleHandleA("libcocos2d.dll");
 
+
     HOOK(base + 0x18C8E0, LoadingLayer_loadAssets, false);
 
     HOOK(base + 0x1907B0, MenuLayer_init, true);
@@ -708,11 +720,15 @@ DWORD WINAPI thread_func(void* hModule) {
     HOOK(base + 0x20BF00, PlayLayer_resetLevel, true);
     HOOK(base + 0x1FD3D0, PlayLayer_levelComplete, true);
     HOOK(base + 0x20D810, PlayLayer_onQuit, true);
+    HOOK(base + 0x209b20, animateInGround, true);
+    HOOK(base + 0x209e60, animateOutGround, true);
 
     HOOK(base + 0x1E8F80, updateJump, true);
     HOOK(base + 0x1f4ff0, PlayerObject_ringJump, true);
+    HOOK(base + 0x1E8200, PlayerObject_update, true);//fk
     HOOK(base + 0xEF0E0, GameObject_activateObject, true);
     HOOK(base + 0xd1c10, GameObject_customSetup, true);
+    //HOOK(base + 0xE5D30, triggerActivated, false);
 
     HOOK(base + 0x154560, KeysLayer_init, true);
     HOOK(base + 0x1DE8F0, MoreOptionsLayer_init, true);
