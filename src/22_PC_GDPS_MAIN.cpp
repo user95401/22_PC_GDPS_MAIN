@@ -2,7 +2,7 @@
 //
 #include "22_PC_GDPS_MAIN.h"
 
-const char* version = "1.9.1";
+const char* version = "1.9.2";
 
 using namespace cocos2d;
 using namespace cocos2d::extension;
@@ -25,11 +25,12 @@ public:
     }
 };
 //msg(self);
-void msg(CCLayer* self, const char* redText = "") {
+void msg(CCLayer* self, const char* redText = "", const char* customMsg = "") {
     CCLabelTTF* msg = CCLabelTTF::create(
         "OBJECT HASN'T FOUNDED\nseems u delete or add some mods\n\n that prevent getting objects\n in this layer",
         "Comic Sans MS",
         120.0f);
+    if(customMsg!="") msg = CCLabelTTF::create(customMsg, "Comic Sans MS", 80.0f);
     msg->setPosition(ModUtils::getCenterPoint());
     msg->setScale(0.150f);//120.0f for lbl fontSize
     CCLabelTTF* msg2 = CCLabelTTF::create(redText, "Comic Sans MS", 120.0f);
@@ -116,10 +117,10 @@ inline PlayLayer* (__cdecl* PlayLayer_resetLevel)(PlayLayer*);
 void __fastcall PlayLayer_resetLevel_H(PlayLayer* self) {
     PlayLayer_resetLevel(self);
     updateByGamePlayOptins(self);
-    if (isSwingCopterMode) {
+    if (isSwingCopterMode && !self->m_isPracticeMode || !self->m_pPlayer1->m_isShip) {
         GameManager::sharedState()->setPlayerShip(GameManager::sharedState()->getIntGameVariable("oldShipIcon"));//bring up by oldShipIcon
+        isSwingCopterMode = false;
     }
-    isSwingCopterMode = false;
 }
 
 inline PlayLayer* (__cdecl* PlayLayer_onQuit)(PlayLayer*);
@@ -215,6 +216,11 @@ void __fastcall GameObject_activateObject_H(GameObject* self, int, PlayerObject*
     if (self->m_nObjectType == kGameObjectTypeShipPortal || self->m_nObjectType == kGameObjectTypeCubePortal || self->m_nObjectType == kGameObjectTypeBallPortal || self->m_nObjectType == kGameObjectTypeUfoPortal || self->m_nObjectType == kGameObjectTypeWavePortal || self->m_nObjectType == kGameObjectTypeRobotPortal || self->m_nObjectType == kGameObjectTypeSpiderPortal) {
         if (self->m_bIsGroupParent && player->m_isInPlayLayer) animateOutGround(PlayLayerFromINit, false);
     }
+    //free mode :skull:
+    /*if (self->m_bIsGroupParent && self->m_nObjectType == kGameObjectTypeCubePortal && self->m_nObjectID != 12) {
+        if (self->m_nObjectID == 13) player->toggleFlyMode(true);
+        if (self->m_nObjectID == 47) player->toggleRollMode(true);
+    }*/
 }
 
 /*inline void(__thiscall* triggerActivated)(GameObject*, float idk);//0xE5D30
@@ -255,6 +261,10 @@ void __fastcall GameObject_customSetup_H(GameObject* self, int) {
             self->addChild(GravityRingGuide);
         }
     }
+    //free mode :skull:
+    /*if (self->m_nObjectType == kGameObjectTypeShipPortal || self->m_nObjectType == kGameObjectTypeCubePortal || self->m_nObjectType == kGameObjectTypeBallPortal || self->m_nObjectType == kGameObjectTypeUfoPortal || self->m_nObjectType == kGameObjectTypeWavePortal || self->m_nObjectType == kGameObjectTypeRobotPortal || self->m_nObjectType == kGameObjectTypeSpiderPortal) {
+        if (self->m_bIsGroupParent) self->m_nObjectType=kGameObjectTypeCubePortal;
+    }*/
 }
 
 class CreatorLayerMod : public cocos2d::CCLayer {
@@ -313,11 +323,10 @@ bool __fastcall CreatorLayer_init_H(CreatorLayer* self) {
         addclbtn("GJ_mapPacksBtn_001.png", menu_selector(CreatorLayer::onMapPacks), { 90,-90 }, menu);
         addclbtn("GJ_searchBtn_001.png", menu_selector(CreatorLayer::onOnlineLevels), { 180,-90 }, menu);
     }
-
-    CCLayer* shit = (CCLayer*)self->getChildren()->objectAtIndex(0); //remove sai's btns
+    //remove sai's btns
+    CCLayer* shit = (CCLayer*)self->getChildren()->objectAtIndex(0);
     if (shit->getZOrder() == 100) self->removeChild(shit);
     else msg(self, "msvcr180.dll (or Sai.dll by old version)");
-
     return true;
 }
 
@@ -325,6 +334,11 @@ class MenuLayerMod {
 public:
     void onTwitch(cocos2d::CCObject* pSender) { CCApplication::sharedApplication()->openURL("https://www.twitch.tv/robtopgames"); }
     void onDiscord(cocos2d::CCObject* pSender) { CCApplication::sharedApplication()->openURL("https://discord.com/invite/geometrydash"); }
+    void onPlay(cocos2d::CCObject* pSender) {
+        auto scene = CCScene::create();
+        scene->addChild(LevelSelectLayer::create(1));
+        CCDirector::sharedDirector()->pushScene(CCTransitionFade::create(0.5f, scene));
+    }
     void onUpdateHttpResponse(CCHttpClient* client, CCHttpResponse* response) {
         std::vector<char>* responseData = response->getResponseData();
         std::string responseString(responseData->begin(), responseData->end());
@@ -360,6 +374,11 @@ bool __fastcall MenuLayer_init_H(MenuLayer* self) {
     request->setResponseCallback(self, httpresponse_selector(MenuLayerMod::onUpdateHttpResponse));
     CCHttpClient::getInstance()->send(request);
     request->release();
+
+    CCMenu* aFirstMenu = (CCMenu*)self->m_profileBtn->getParent();
+    CCMenuItemSpriteExtra* playBtn = (CCMenuItemSpriteExtra*)aFirstMenu->getChildren()->objectAtIndex(0);
+    //playBtn->removeFromParent();
+    playBtn->setTarget(self, menu_selector(MenuLayerMod::onPlay));
 
     auto socialsMenu = CCMenu::create();
     self->addChild(socialsMenu, 2);
@@ -414,9 +433,19 @@ bool __fastcall MenuLayer_init_H(MenuLayer* self) {
     CCLayer* SaiModPackThings = (CCLayer*)self->getChildren()->objectAtIndex(0);
     if (SaiModPackThings->getZOrder() == 100) SaiModPackThings->removeFromParent();
     else msg(self, "SaiModPack.dll");
-
+    //gdshare noitce
+    if (CCFileUtils::sharedFileUtils()->isFileExist("mods/GDShare-v0.3.4.dll") ||
+        CCFileUtils::sharedFileUtils()->isFileExist("mods/GDShare.dll") ||
+        CCFileUtils::sharedFileUtils()->isFileExist("GDShare-v0.3.4.dll")
+        ) msg(self, "Seems you installed GDShare\nGDShare is unstable with sai's mods,\nyou can get game crash", " ");
     return true;
 }
+//inline void(__cdecl* MenuLayer_onPlay)(MenuLayer*, cocos2d::CCObject*);//0x191b50
+//void __fastcall MenuLayer_onPlay_H(MenuLayer* self, void*, cocos2d::CCObject* sender) {
+//    MenuLayer_onPlay(self, sender);
+//    FLAlertLayer::create(nullptr, "LevelSelectLayer still ruined", "Ok", nullptr, "and the button has not lost its function and still calls LevelSelectLayer::create()")->show();
+//    FLAlertLayer::create(nullptr, "LevelSelectLayer still ruined", "Sadly...", "Ok", "LevelSelectLayer::create was ruined by sai's dyn. lib \"<cr>dlux</c>\"\n<cl>if u can destroy</c><cr>deluxe.dll's hook</c> - write about it in <cb>discord</c>, u will be <co>legend</c>")->show();
+//}
 
 inline bool (__cdecl* GJGarageLayer_init)(GJGarageLayer*);
 bool __fastcall GJGarageLayer_init_H(GJGarageLayer* self) {
@@ -693,6 +722,7 @@ CCLabelBMFont* CCLabelBMFont_create_H(const char* str, const char* fntFile) {
 }
 
 DWORD WINAPI thread_func(void* hModule) {
+    LoadLibrary("cocos-explorer.dll");
 
     // initialize minhook
     MH_Initialize();
@@ -708,6 +738,7 @@ DWORD WINAPI thread_func(void* hModule) {
     HOOK(base + 0x18C8E0, LoadingLayer_loadAssets, false);
 
     HOOK(base + 0x1907B0, MenuLayer_init, true);
+    //HOOK(base + 0x191b50, MenuLayer_onPlay, true);
     HOOK(base + 0x4DE40, CreatorLayer_init, true);
     HOOK(base + 0x1255D0, GJGarageLayer_init, true);
     HOOK(base + 0x12ADF0, GJGarageLayer_onBack, true);
@@ -739,6 +770,28 @@ DWORD WINAPI thread_func(void* hModule) {
     MH_EnableHook(MH_ALL_HOOKS);
 
     //MessageBoxA(nullptr, "hooks enabled", __func__, MB_ICONINFORMATION | MB_OK);
+
+    if("hacks container lol") {
+        // Level Completion
+        ModUtils::write_bytes(base + 0x1FD557, { 0xEB, 0x0C, });
+        ModUtils::write_bytes(base + 0x1FD742, { 0xC7, 0x87, 0xE0, 0x02, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xC7, 0x87, 0xE4, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 });
+        ModUtils::write_bytes(base + 0x1FD756, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 });
+        ModUtils::write_bytes(base + 0x1FD79A, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 });
+        ModUtils::write_bytes(base + 0x1FD7AF, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 });
+        // Load Failed
+        ModUtils::write_bytes(base + 0x18B2B4, { 0xB0 , 0x01 });
+        //Rotation Hack
+        ModUtils::write_bytes(base + 0x85CBC, { 0xB8, 0x01, 0x00, 0x00, 0x00, 0x90 });
+        ModUtils::write_bytes(base + 0x8BDDD, { 0xB8, 0x01, 0x00, 0x00, 0x00, 0x90 });
+        ModUtils::write_bytes(base + 0x8BE16, { 0xB8, 0x01, 0x00, 0x00, 0x00, 0x90 });
+        ModUtils::write_bytes(base + 0xECA3D, { 0xB8, 0x01, 0x00, 0x00, 0x00, 0x90 });
+        ModUtils::write_bytes(base + 0xEE5A9, { 0xB8, 0x01, 0x00, 0x00, 0x00, 0x90 });
+        ModUtils::write_bytes(base + 0x20181E, { 0xB8, 0x01, 0x00, 0x00, 0x00, 0x90 });
+    }
+
+    LoadLibrary("cocos-explorer.dll");
+    CCFileUtils::sharedFileUtils()->addSearchPath("mods");
+    CCFileUtils::sharedFileUtils()->addSearchPath("adaf-dll");
 
     return 0;
 }
