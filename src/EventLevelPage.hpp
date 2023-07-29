@@ -14,6 +14,7 @@ protected:
 	void onClose(cocos2d::CCObject*);
 public:
 	static EventLevelPage* create();
+	const char* getEventTimeString();
 };
 
 #endif

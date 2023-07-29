@@ -1,6 +1,6 @@
 #include "EventLevelPage.hpp"
 
-const char* getEventTimeString()
+const char* EventLevelPage::getEventTimeString()
 {
     switch (rand() % 21)
     {

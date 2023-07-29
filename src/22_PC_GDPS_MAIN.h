@@ -17,4 +17,16 @@
 #include "LevelAreaInnerLayer.hpp"
 #include "LevelAreaLayer.hpp"
 
+bool idontgiveashitbro = false;
+bool hooksLoaded = false;
+
+PlayLayer* PlayLayerFromINit;
+bool shouldPlaySpeedParticle = true;
+int lastSelectedObj = 0;
+
+bool isSwingCopterMode = false;
+int oldShipIcon;
+
+const char* version = "1.20";
+
 // TODO: установите здесь ссылки на дополнительные заголовки, требующиеся для программы.

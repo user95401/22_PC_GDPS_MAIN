@@ -2,19 +2,9 @@
 //
 #include "22_PC_GDPS_MAIN.h"
 
-const char* version = "1.9.2";
-
 using namespace cocos2d;
 using namespace cocos2d::extension;
 using namespace gd;
-
-bool idontgiveashitbro = false;
-
-bool isSwingCopterMode = false;
-int oldShipIcon;
-
-PlayLayer* PlayLayerFromINit;
-bool shouldPlaySpeedParticle = true;
 
 class idontgiveashit {
 public:
@@ -74,7 +64,7 @@ void updateByGamePlayOptins(PlayLayer* self) {
 
 inline PlayLayer* (__cdecl* PlayLayer_levelComplete)(PlayLayer*);
 bool __fastcall PlayLayer_levelComplete_H(PlayLayer* self) {
-    PlayLayer_levelComplete(self);
+    if (!PlayLayer_levelComplete(self)) return false;
     GJGameLevel* level = self->m_level;
     if (level->m_nLevelID == 1070) {
         GameManager::sharedState()->setUGV("LevelAreaInnerLayer_level1", true);
@@ -92,6 +82,7 @@ bool __fastcall PlayLayer_levelComplete_H(PlayLayer* self) {
         GameManager::sharedState()->setUGV("LevelAreaInnerLayer_level4", true);
         if (GameManager::sharedState()->getUGV("LevelAreaInnerLayer_level4")) { AchievementNotifier::sharedState()->notifyAchievement("Completed #4", "You completed level of The Tower.", "GJ_completesIcon_001.png", true); }
     }
+    return true;
 }
 
 inline bool(__thiscall* PlayLayer_init)(PlayLayer*, GJGameLevel*);
@@ -108,6 +99,7 @@ bool __fastcall PlayLayer_init_H(PlayLayer* self, int edx, GJGameLevel* level) {
     }
     updateByGamePlayOptins(self);
 
+    GameManager::sharedState()->setPlayerShip(GameManager::sharedState()->getIntGameVariable("oldShipIcon"));//bring up by oldShipIcon
     if (GameManager::sharedState()->getPlayerShip() != 170) GameManager::sharedState()->setIntGameVariable("oldShipIcon", GameManager::sharedState()->getPlayerShip());//save oldShipIcon
 
     return true;
@@ -145,12 +137,36 @@ void __fastcall animateOutGround_H(PlayLayer* self, void*, bool idk) {
     animateOutGround(self, idk);
 }
 
+inline void(__thiscall* PlayerObject_ringJump)(PlayerObject*, GameObject*);
+void __fastcall PlayerObject_ringJump_H(gd::PlayerObject* self, int, gd::GameObject* ring) {
+    PlayerObject_ringJump(self, ring);
+    if (ring->m_nObjectID == 3004 && ring->m_bHasBeenActivated) {
+        self->spiderTestJump(true);
+        if (ring->m_bRandomisedAnimStart) ring->m_bHasBeenActivated = false;
+        if (ring->m_bRandomisedAnimStart) ring->m_bHasBeenActivatedP2 = false;
+    }
+}
+
+inline void(__thiscall* bumpPlayer)(GJBaseGameLayer*, PlayerObject*, GameObject*);
+void __fastcall bumpPlayer_H(GJBaseGameLayer* self, int, gd::PlayerObject* Player,  gd::GameObject* bumper) {
+    bumpPlayer(self, Player, bumper);
+    if (bumper->m_nObjectID == 3005) {
+        Player->spiderTestJump(true);
+        if(bumper->m_bRandomisedAnimStart) bumper->m_bHasBeenActivated = false;
+        if (bumper->m_bRandomisedAnimStart) bumper->m_bHasBeenActivatedP2 = false;
+    }
+}
+
+inline void(__thiscall* PlayerObject_update)(PlayerObject* self, float);
+void __fastcall PlayerObject_update_H(PlayerObject* self, void*, float dtidk) {
+    PlayerObject_update(self, dtidk);
+}
+
 static inline void update_swing_copter(gd::PlayerObject* __this, const float delta) {
 
     __this->setScaleY((fabs(__this->getScaleY())));
     __this->deactivateParticle();
-    /*if(__this->m_isUpsideDown) __this->m_regularTrail->setScaleY(1.025);
-    else __this->m_regularTrail->setScaleY(1.1);*/
+    *reinterpret_cast<double*>(reinterpret_cast<uintptr_t>(__this) + 0x528) = 0.8;
 
     const auto _direction = __this->m_isUpsideDown ? -1.f : 1.f;
     const auto _size = (__this->m_vehicleSize != true) ? .85f : 1.f;
@@ -173,69 +189,72 @@ void  __fastcall  updateJump_H(gd::PlayerObject* __this, void*) {
     __asm movss[delta], xmm1;
     if (!isSwingCopterMode) {
         return updateJump(__this, delta);
-        //__this->setScaleY( (fabs(__this->getScaleY())) );
     }
     return update_swing_copter(__this, delta);
-}
-
-inline void(__thiscall* PlayerObject_ringJump)(PlayerObject*, GameObject*);
-void __fastcall PlayerObject_ringJump_H(gd::PlayerObject* self, int, gd::GameObject* ring) {
-    PlayerObject_ringJump(self, ring);
-    if (ring->m_nObjectType == kGameObjectTypeCustomRing && ring->m_bIsGroupParent) {
-        if (ring->m_bHasBeenActivated && ring->m_nEditorLayer2 != 1) self->spiderTestJump(true);
-        if (ring->m_nEditorLayer2 == 1) self->spiderTestJump(true);
-    }
-}
-
-inline void(__thiscall* PlayerObject_update)(PlayerObject* self, float);
-void __fastcall PlayerObject_update_H(PlayerObject* self, void*, float dtidk) {
-    PlayerObject_update(self, dtidk);
 }
 
 inline void(__thiscall* GameObject_activateObject)(GameObject*, PlayerObject*);
 void __fastcall GameObject_activateObject_H(GameObject* self, int, PlayerObject* player) {
     GameObject_activateObject(self, player);
-    if (self->m_nObjectID == 1933) {
-        isSwingCopterMode = true;
-        if (GameManager::sharedState()->getPlayerShip() != 170) GameManager::sharedState()->setIntGameVariable("oldShipIcon", GameManager::sharedState()->getPlayerShip());//save oldShipIcon
-        GameManager::sharedState()->setPlayerShip(170);
-        //player->m_regularTrail->setScaleY(1.1);
-        player->toggleRobotMode(true);
-        player->toggleFlyMode(true);
-    }
-    else if(self->m_nObjectType!=kGameObjectTypeNormalGravityPortal && self->m_nObjectType != kGameObjectTypeInverseGravityPortal) {
-        GameManager::sharedState()->setPlayerShip(GameManager::sharedState()->getIntGameVariable("oldShipIcon"));//bring up by oldShipIcon
-        if (self->m_nObjectID == 13 && isSwingCopterMode) {
-            /*player->m_regularTrail->setScaleY(1.0);*/
+    if("SwingCopter"){
+        if (self->m_nObjectID == 1933) {
+            isSwingCopterMode = true;
+            if (GameManager::sharedState()->getPlayerShip() != 170) GameManager::sharedState()->setIntGameVariable("oldShipIcon", GameManager::sharedState()->getPlayerShip());//save oldShipIcon
+            GameManager::sharedState()->setPlayerShip(170);
             player->toggleRobotMode(true);
             player->toggleFlyMode(true);
         }
-        isSwingCopterMode = false;
+        else if (self->m_nObjectType != kGameObjectTypeNormalGravityPortal && self->m_nObjectType != kGameObjectTypeInverseGravityPortal && self->m_nObjectType != kGameObjectTypeTeleportPortal) {
+            GameManager::sharedState()->setPlayerShip(GameManager::sharedState()->getIntGameVariable("oldShipIcon"));//bring up by oldShipIcon
+            if (self->m_nObjectID == 13 && isSwingCopterMode) {
+                player->toggleRobotMode(true);
+                player->toggleFlyMode(true);
+            }
+            isSwingCopterMode = false;
+        }
     }
     //noGround
     if (self->m_nObjectType == kGameObjectTypeShipPortal || self->m_nObjectType == kGameObjectTypeCubePortal || self->m_nObjectType == kGameObjectTypeBallPortal || self->m_nObjectType == kGameObjectTypeUfoPortal || self->m_nObjectType == kGameObjectTypeWavePortal || self->m_nObjectType == kGameObjectTypeRobotPortal || self->m_nObjectType == kGameObjectTypeSpiderPortal) {
-        if (self->m_bIsGroupParent && player->m_isInPlayLayer) animateOutGround(PlayLayerFromINit, false);
+        if (self->m_bRandomisedAnimStart && player->m_isInPlayLayer) animateOutGround(PlayLayerFromINit, false);
     }
-    //free mode :skull:
-    /*if (self->m_bIsGroupParent && self->m_nObjectType == kGameObjectTypeCubePortal && self->m_nObjectID != 12) {
-        if (self->m_nObjectID == 13) player->toggleFlyMode(true);
-        if (self->m_nObjectID == 47) player->toggleRollMode(true);
-    }*/
 }
 
-/*inline void(__thiscall* triggerActivated)(GameObject*, float idk);//0xE5D30
-void __fastcall triggerActivated_H(GameObject* self, void*, float idk) {
-    if (!self->m_bIsGroupParent) triggerActivated(self, idk);
-    //speed objects lol
-    //MessageBoxA(nullptr, std::to_string(idk).c_str(), __func__, MB_ICONINFORMATION | MB_OK);
-}*/
+inline void(__thiscall* triggerObject)(GameObject*, GJBaseGameLayer*);//0xd1790
+void __fastcall triggerObject_H(GameObject* self, void*, GJBaseGameLayer* baseGameLayer) {
+    triggerObject(self, baseGameLayer);
+    auto PlayerObj = baseGameLayer->m_pPlayer1;
+    if (self->m_nObjectID == 1917) {
+        if (PlayerObj->m_playerSpeed > 0.0) {
+            //goleft
+            PlayerObj->m_playerSpeed = -fabs(PlayerObj->m_playerSpeed);
+            //negative scaleX if plr is not dart
+            if (!PlayerObj->m_isDart && !PlayerObj->m_isShip) PlayerObj->setScaleX(-PlayerObj->m_vehicleSize);
+            //ship flipping
+            if (PlayerObj->m_isShip) {
+                if (!PlayerObj->m_isUpsideDown) PlayerObj->setScaleY(-PlayerObj->m_vehicleSize);
+                else PlayerObj->setScaleY(fabs(PlayerObj->m_vehicleSize));
+            }
+            //negative rot patch by sai 1E9CD8: org b4 00 00 00 // patch 4c ff ff ff
+            ModUtils::write_bytes(base + 0x1E9CD8, { 0x4c, 0xff, 0xff, 0xff });
+            //ModUtils::write_bytes(base + 0x1E9CD8, { 0xb4, 0x00, 0x00, 0x00 });
+        }
+    }
+    if (self->m_nObjectID == 1931 && PlayLayerFromINit) {
+        PlayLayerFromINit->levelComplete();
+        PlayLayerFromINit->m_hasCompletedLevel = true;
+        PlayLayerFromINit->moveCameraToPos({self->m_obStartPosition.x - (CCDirector::sharedDirector()->getWinSize().width / 2), self->m_obStartPosition.y - (CCDirector::sharedDirector()->getWinSize().height / 2) });
+        PlayLayerFromINit->m_pPlayer1->m_playerSpeed = 0.0;
+        PlayLayerFromINit->m_pPlayer1->deactivateParticle();
+        PlayLayerFromINit->playExitDualEffect(PlayLayerFromINit->m_pPlayer1);
+    }
+}
 
 inline void(__thiscall* GameObject_customSetup)(GameObject*);
 void __fastcall GameObject_customSetup_H(GameObject* self, int) {
     GameObject_customSetup(self);
     //orb guide
-    if(GameManager::sharedState()->getGameVariable("0130")){
-        if(self->m_nObjectType==kGameObjectTypeDropRing){
+    if (GameManager::sharedState()->getGameVariable("0130")) {
+        if (self->m_nObjectType == kGameObjectTypeDropRing) {
             CCSprite* darkblade_03_color_001 = CCSpritePlus::createWithSpriteFrameName("darkblade_03_color_001.png");
             darkblade_03_color_001->setPosition({ 16.200, 16.200 });
             self->addChild(darkblade_03_color_001);
@@ -265,6 +284,46 @@ void __fastcall GameObject_customSetup_H(GameObject* self, int) {
     /*if (self->m_nObjectType == kGameObjectTypeShipPortal || self->m_nObjectType == kGameObjectTypeCubePortal || self->m_nObjectType == kGameObjectTypeBallPortal || self->m_nObjectType == kGameObjectTypeUfoPortal || self->m_nObjectType == kGameObjectTypeWavePortal || self->m_nObjectType == kGameObjectTypeRobotPortal || self->m_nObjectType == kGameObjectTypeSpiderPortal) {
         if (self->m_bIsGroupParent) self->m_nObjectType=kGameObjectTypeCubePortal;
     }*/
+    //noGround
+    if (self->m_nObjectType == kGameObjectTypeShipPortal || self->m_nObjectType == kGameObjectTypeCubePortal || self->m_nObjectType == kGameObjectTypeBallPortal || self->m_nObjectType == kGameObjectTypeUfoPortal || self->m_nObjectType == kGameObjectTypeWavePortal || self->m_nObjectType == kGameObjectTypeRobotPortal || self->m_nObjectType == kGameObjectTypeSpiderPortal) {
+        self->m_bIsEffectObject = true;
+        //self->m_bActive = true;
+    }
+    if (self->m_nObjectID == 3004) {
+        //main setups
+        self->m_nObjectType = kGameObjectTypePinkJumpRing;
+        self->m_pBaseColor->defaultColorID = 1011;
+        self->m_bIsEffectObject = true;
+        
+    }
+    if (self->m_nObjectID == 3005) {
+        //main setups
+        self->m_nObjectType = kGameObjectTypePinkJumpPad;//type
+        self->m_pBaseColor->defaultColorID = 1011;//defaultColor
+        self->m_bIsEffectObject = true;//IsEffectObject (for multiactive feature:smiling_face_with_tear:)
+        
+        //box setups
+        self->setAnchorPoint(CCPoint(self->getAnchorPoint().x, 1.4));// totally :smiling_face_with_tear:
+        auto frame = cocos2d::CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(self->m_sTextureName.c_str());
+        self->m_obObjectSize = cocos2d::CCSizeMake(frame->getRect().size.width, frame->getRect().size.height);
+        self->m_obBoxOffset = CCPoint(0, -10);
+        self->m_obBoxOffset2 = CCPoint(0, -10);
+    }
+    if (self->m_sTextureName.find("pixelart_") != self->m_sTextureName.npos) {
+        self->m_nObjectType = kGameObjectTypeDecoration;
+    }
+
+    if (self->m_nObjectID == 1814) self->setDisplayFrame(cocos2d::CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(
+        "edit_eCameraBtn_001.png"));
+    if (self->m_nObjectID == 1817) self->setDisplayFrame(cocos2d::CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(
+        "edit_e2.2Btn_001.png"));
+}
+
+inline void(__thiscall* GameObject_addGlow)(GameObject* self);
+void __fastcall GameObject_addGlow_H(GameObject* self) {
+    GameObject_addGlow(self);
+    if (self->m_nObjectID == 3004) {
+    }
 }
 
 class CreatorLayerMod : public cocos2d::CCLayer {
@@ -292,7 +351,7 @@ public:
     }
 };
 void addclbtn(const char* name, cocos2d::SEL_MenuHandler sus, const CCPoint& pos, CCMenu* menu) {
-    auto btn = ModUtils::createSprite(name);
+    CCSprite* btn = ModUtils::createSprite(name);
     btn->setScale(0.8f);
     auto btnItem = CCMenuItemSpriteExtra::create(btn, menu, sus);
     btnItem->setPosition(pos);
@@ -438,14 +497,10 @@ bool __fastcall MenuLayer_init_H(MenuLayer* self) {
         CCFileUtils::sharedFileUtils()->isFileExist("mods/GDShare.dll") ||
         CCFileUtils::sharedFileUtils()->isFileExist("GDShare-v0.3.4.dll")
         ) msg(self, "Seems you installed GDShare\nGDShare is unstable with sai's mods,\nyou can get game crash", " ");
+    
+    GameManager::sharedState()->setPlayerShip(GameManager::sharedState()->getIntGameVariable("oldShipIcon"));//bring up by oldShipIcon
     return true;
 }
-//inline void(__cdecl* MenuLayer_onPlay)(MenuLayer*, cocos2d::CCObject*);//0x191b50
-//void __fastcall MenuLayer_onPlay_H(MenuLayer* self, void*, cocos2d::CCObject* sender) {
-//    MenuLayer_onPlay(self, sender);
-//    FLAlertLayer::create(nullptr, "LevelSelectLayer still ruined", "Ok", nullptr, "and the button has not lost its function and still calls LevelSelectLayer::create()")->show();
-//    FLAlertLayer::create(nullptr, "LevelSelectLayer still ruined", "Sadly...", "Ok", "LevelSelectLayer::create was ruined by sai's dyn. lib \"<cr>dlux</c>\"\n<cl>if u can destroy</c><cr>deluxe.dll's hook</c> - write about it in <cb>discord</c>, u will be <co>legend</c>")->show();
-//}
 
 inline bool (__cdecl* GJGarageLayer_init)(GJGarageLayer*);
 bool __fastcall GJGarageLayer_init_H(GJGarageLayer* self) {
@@ -555,7 +610,15 @@ void __fastcall LevelEditorLayer_onStopPlaytest_H(LevelEditorLayer* self, void*,
         GameManager::sharedState()->setPlayerShip(GameManager::sharedState()->getIntGameVariable("oldShipIcon"));//bring up by oldShipIcon
     }
     isSwingCopterMode = false;
-    //self->m_pPlayer1->m_regularTrail->setScaleY(1.0);
+}
+
+inline void(__thiscall* LevelEditorLayer_onPlaytest)(LevelEditorLayer*);
+void __fastcall LevelEditorLayer_onPlaytest_H(LevelEditorLayer* self, void*) {
+    LevelEditorLayer_onPlaytest(self);
+    if (isSwingCopterMode) {
+        GameManager::sharedState()->setPlayerShip(GameManager::sharedState()->getIntGameVariable("oldShipIcon"));//bring up by oldShipIcon
+    }
+    isSwingCopterMode = false;
 }
 
 inline bool(__thiscall* EditorPauseLayer_init)(EditorPauseLayer*, LevelEditorLayer*);
@@ -566,6 +629,70 @@ bool __fastcall EditorPauseLayer_init_H(EditorPauseLayer* self, int edx, LevelEd
     }
     isSwingCopterMode = false;
     return true;
+}
+
+inline void(__thiscall* EditorUI_setupCreateMenu)(EditorUI*);
+void __fastcall EditorUI_setupCreateMenu_H(EditorUI* self, void*) {
+    EditorUI_setupCreateMenu(self);
+    //tab6
+    auto tab6 = (EditButtonBar*)(self->m_pCreateButtonBars->objectAtIndex(6));
+    tab6->m_pButtonArray->insertObject(self->getCreateBtn(3004, 4), 13);
+    tab6->m_pButtonArray->insertObject(self->getCreateBtn(3005, 4), 5);
+    tab6->loadFromItems(tab6->m_pButtonArray, GameManager::sharedState()->getIntGameVariable("0049"), GameManager::sharedState()->getIntGameVariable("0050"), true);
+    //tab7
+    auto tab7 = (EditButtonBar*)(self->m_pCreateButtonBars->objectAtIndex(7));
+    //lava nad other animated blocks
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1591, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1593, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1849, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1850, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1851, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1852, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1853, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1854, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1855, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1858, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1856, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1697, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1698, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1699, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1857, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1860, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1516, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1518, 4));
+    tab7->m_pButtonArray->addObject(self->getCreateBtn(1517, 4));
+    //reload tab7 i think
+    tab7->loadFromItems(tab7->m_pButtonArray, GameManager::sharedState()->getIntGameVariable("0049"), GameManager::sharedState()->getIntGameVariable("0050"), true);
+
+    //tab8
+    //auto tab8 = (EditButtonBar*)(self->m_pCreateButtonBars->objectAtIndex(8));
+    //tab8->m_pButtonArray->addObject(self->getCreateBtn(2140, 4));
+    //tab8->loadFromItems(tab8->m_pButtonArray, GameManager::sharedState()->getIntGameVariable("0049"), GameManager::sharedState()->getIntGameVariable("0050"), true);
+    //tab14
+    auto tab14 = (EditButtonBar*)(self->m_pCreateButtonBars->objectAtIndex(14));
+    auto timeWarp = tab14->m_pButtonArray->objectAtIndex(4);
+    tab14->m_pButtonArray->removeObjectAtIndex(4);
+    tab14->m_pButtonArray->insertObject(self->getCreateBtn(2701, 5), 4);
+    tab14->m_pButtonArray->insertObject(self->getCreateBtn(2702, 5), 5);
+    tab14->m_pButtonArray->insertObject(self->getCreateBtn(2067, 5), 11);
+    tab14->m_pButtonArray->insertObject(self->getCreateBtn(1912, 5), 20);
+    tab14->m_pButtonArray->insertObject(self->getCreateBtn(2068, 5), 21);
+    tab14->m_pButtonArray->insertObject(self->getCreateBtn(1913, 5), 22);
+    tab14->m_pButtonArray->insertObject(self->getCreateBtn(1914, 5), 23);
+    tab14->m_pButtonArray->insertObject(self->getCreateBtn(1916, 5), 24);
+    tab14->m_pButtonArray->insertObject(self->getCreateBtn(1917, 4), 25);
+    tab14->m_pButtonArray->insertObject(self->getCreateBtn(1934, 5), 26);
+    tab14->m_pButtonArray->insertObject(timeWarp, 27);
+    tab14->m_pButtonArray->insertObject(self->getCreateBtn(1931, 4), 38);
+    tab14->m_pButtonArray->insertObject(self->getCreateBtn(1932, 5), 39);
+    tab14->loadFromItems(tab14->m_pButtonArray, GameManager::sharedState()->getIntGameVariable("0049"), GameManager::sharedState()->getIntGameVariable("0050"), true);
+
+    return;
+}
+inline void(__thiscall* EditorUI_selectObject)(EditorUI*, GameObject* obj, bool filter);//win 0x86250;
+void __fastcall EditorUI_selectObject_H(EditorUI* self, void*, GameObject* obj, bool filter) {
+    EditorUI_selectObject(self, obj, filter);
+    lastSelectedObj = obj->m_nObjectID;
 }
 
 bool DailyLevelIsWeekly;
@@ -654,7 +781,28 @@ void __fastcall LoadingLayer_loadAssets_H(LoadingLayer* self) {
         //TowerSheet
         CCTextureCache::sharedTextureCache()->addImage("TowerSheet.png", 0);
         CCSpriteFrameCache::sharedSpriteFrameCache()->addSpriteFramesWithFile("TowerSheet.plist");
+
+        CCFileUtils::sharedFileUtils()->addSearchPath("mods");
+        CCFileUtils::sharedFileUtils()->addSearchPath("adaf-dll");
+
+        //ObjectToolbox::sharedState()->addObject(2140, "pixelart_040_001.png");
+
+        ObjectToolbox::sharedState()->addObject(3004, "spiderRing_001.png");
+        GameObject* spiderRing_001 = (GameObject*)ObjectToolbox::sharedState()->getUserObject();
+        ObjectToolbox::sharedState()->addObject(3005, "spiderBump_001.png");
     }
+    self->removeChildByTag(777);
+    if (!hooksLoaded && self->m_nLoadIndex > 8) {
+        self->m_nLoadIndex = 8;
+        self->addChild(
+            CCLabelTTF::create("                                   Waiting for hooks...\n\n",
+            "Comic Sans MS", 10)
+        , 5, 777);
+    }
+    if(hooksLoaded && !self->m_bFromRefresh) self->addChild(
+            CCLabelTTF::create("                                 All hooks enabled!\n\n",
+            "Comic Sans MS", 10)
+        , 5, 777);
 }
 
 inline CCSprite* (__cdecl* CCSprite_create)(const char*);
@@ -695,29 +843,28 @@ CCLabelBMFont* CCLabelBMFont_create_H(const char* str, const char* fntFile) {
         str = "Available in Gameplay Options only";
     if (std::string(str) == "Select Color") 
         str = "";
-    if (std::string(str) == "Group\nParent") {
-        str = "Extra\nAction\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGroup\nParent\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
-        CCLabelBMFont* lbl = CCLabelBMFont::create(str, fntFile);
-        CCPoint point = ModUtils::getCenterPoint();
-        //org-455
-        lbl->runAction(CCRepeatForever::create(CCSequence::create(
-            CCDelayTime::create(2.0), CCMoveTo::create(0.0, { (point.x + 69), (point.y - 134) - 455 }),
-            CCDelayTime::create(2.0), CCMoveTo::create(0.0, { (point.x + 69), (point.y - 134) })
-            , nullptr)));
-        return lbl;
+
+    if (std::string(str) == "Edit Animation Settings" && std::string(fntFile) == "goldFont.fnt") {
+        if (lastSelectedObj == 3004 || lastSelectedObj == 3005 //spiter orb anda pad
+            || lastSelectedObj == 12 || lastSelectedObj == 13 || lastSelectedObj == 47 || lastSelectedObj == 111 || lastSelectedObj == 660 || lastSelectedObj == 745 || lastSelectedObj == 47 || lastSelectedObj == 1331) //noground portals
+            str = "Object setup";
     }
-    if (std::string(str) == "Editor L2") {
-        str = "Extr. Action ID\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nEditor L2\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
-        CCLabelBMFont* lbl = CCLabelBMFont::create(str, fntFile);
-        lbl->setAlignment(kCCTextAlignmentCenter);
-        CCPoint point = ModUtils::getCenterPoint();
-        //org-455
-        lbl->runAction(CCRepeatForever::create(CCSequence::create(
-            CCDelayTime::create(2.0), CCMoveTo::create(0.0, { (point.x + 0.f), (point.y + 138.f) - 439.5f }),
-            CCDelayTime::create(2.0), CCMoveTo::create(0.0, { (point.x + 0.f), (point.y + 138.f) })
-            , nullptr)));
-        return lbl;
+    if (std::string(str) == "Randomize Start" && std::string(fntFile) == "bigFont.fnt") {
+        if (lastSelectedObj == 3004 || lastSelectedObj == 3005) str = "Allow multi activate";
+        if (lastSelectedObj == 12 || lastSelectedObj == 13 || lastSelectedObj == 47 || lastSelectedObj == 111 || lastSelectedObj == 660 || lastSelectedObj == 745 || lastSelectedObj == 47 || lastSelectedObj == 1331)
+            str = "No ground";//noGround
     }
+    if (std::string(str) == "Animation settings help" && std::string(fntFile) == "chatFont.fnt") {
+        CCLabelBMFont* lbl = CCLabelBMFont::create("", "chatFont.fnt", 435, kCCTextAlignmentCenter);
+        std::string info = "";
+        if (lastSelectedObj == 3004 || lastSelectedObj == 3005)
+            info = "Allows multi activate feature.\nNote: set up first groundHeight(first 2 grounds gamemode) \nto reduce bugs with cube or robot";
+        if (lastSelectedObj == 12 || lastSelectedObj == 13 || lastSelectedObj == 47 || lastSelectedObj == 111 || lastSelectedObj == 660 || lastSelectedObj == 745 || lastSelectedObj == 47 || lastSelectedObj == 1331)
+            info = "Just will animate out grounds when enter portal";//noGround
+        lbl->setString(std::string("                      \n" + info + "\n\n\n ").c_str());
+        if(info != "") return lbl;
+    }
+
     return CCLabelBMFont_create(str, fntFile);
 }
 
@@ -726,26 +873,26 @@ DWORD WINAPI thread_func(void* hModule) {
 
     // initialize minhook
     MH_Initialize();
+
+    HOOK(base + 0x18C8E0, LoadingLayer_loadAssets, true);
+    MH_EnableHook(LoadingLayer_loadAssets);
     
     CC_HOOK("?create@CCSprite@cocos2d@@SAPAV12@PBD@Z", CCSprite_create, false);
     CC_HOOK("?createWithSpriteFrameName@CCSprite@cocos2d@@SAPAV12@PBD@Z", CCSprite_createWithSpriteFrameName, false);
     CC_HOOK("?create@CCLabelBMFont@cocos2d@@SAPAV12@PBD0@Z", CCLabelBMFont_create, false);
 
-    auto base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
-    auto libcocos2d = (DWORD)GetModuleHandleA("libcocos2d.dll");
-
-
-    HOOK(base + 0x18C8E0, LoadingLayer_loadAssets, false);
-
-    HOOK(base + 0x1907B0, MenuLayer_init, true);
-    //HOOK(base + 0x191b50, MenuLayer_onPlay, true);
-    HOOK(base + 0x4DE40, CreatorLayer_init, true);
-    HOOK(base + 0x1255D0, GJGarageLayer_init, true);
-    HOOK(base + 0x12ADF0, GJGarageLayer_onBack, true);
+    HOOK(base + 0x1907B0, MenuLayer_init, false);
+    //HOOK(base + 0x191b50, MenuLayer_onPlay, false);
+    HOOK(base + 0x4DE40, CreatorLayer_init, false);
+    HOOK(base + 0x1255D0, GJGarageLayer_init, false);
+    HOOK(base + 0x12ADF0, GJGarageLayer_onBack, false);
 
     HOOK(base + 0x15ee00, LevelEditorLayer_init, true);
     HOOK(base + 0x876E0, LevelEditorLayer_onStopPlaytest, true);
+    HOOK(base + 0x1695A0, LevelEditorLayer_onPlaytest, true);
     HOOK(base + 0x730e0, EditorPauseLayer_init, true);
+    HOOK(base + 0x7CAF0, EditorUI_setupCreateMenu, false);//huh
+    HOOK(base + 0x86250, EditorUI_selectObject, false);
 
     HOOK(base + 0x1FB780, PlayLayer_init, true);
     HOOK(base + 0x20BF00, PlayLayer_resetLevel, true);
@@ -756,19 +903,22 @@ DWORD WINAPI thread_func(void* hModule) {
 
     HOOK(base + 0x1E8F80, updateJump, true);
     HOOK(base + 0x1f4ff0, PlayerObject_ringJump, true);
+    HOOK(base + 0x10ed50, bumpPlayer, true);
     HOOK(base + 0x1E8200, PlayerObject_update, true);//fk
     HOOK(base + 0xEF0E0, GameObject_activateObject, true);
     HOOK(base + 0xd1c10, GameObject_customSetup, true);
-    //HOOK(base + 0xE5D30, triggerActivated, false);
+    HOOK(base + 0xd1790, triggerObject, false);
+    HOOK(base + 0xcfef0, GameObject_addGlow, false);
 
     HOOK(base + 0x154560, KeysLayer_init, true);
     HOOK(base + 0x1DE8F0, MoreOptionsLayer_init, true);
     HOOK(base + 0x25C7B0, SupportLayer_customSetup, true);
     HOOK(base + 0x6a900, DailyLevelPage_init, true);
     HOOK(base + 0x210040, ProfilePage_loadPageFromUserInfo, true);
+
     // enable all hooks you've created with minhook
     MH_EnableHook(MH_ALL_HOOKS);
-
+    hooksLoaded = true;
     //MessageBoxA(nullptr, "hooks enabled", __func__, MB_ICONINFORMATION | MB_OK);
 
     if("hacks container lol") {
@@ -787,11 +937,28 @@ DWORD WINAPI thread_func(void* hModule) {
         ModUtils::write_bytes(base + 0xECA3D, { 0xB8, 0x01, 0x00, 0x00, 0x00, 0x90 });
         ModUtils::write_bytes(base + 0xEE5A9, { 0xB8, 0x01, 0x00, 0x00, 0x00, 0x90 });
         ModUtils::write_bytes(base + 0x20181E, { 0xB8, 0x01, 0x00, 0x00, 0x00, 0x90 });
+        //DefaultSongBypass
+        ModUtils::write_bytes(base + 0x174407, { 0x90, 0x90 });
+        ModUtils::write_bytes(base + 0x174411, { 0x90, 0x90, 0x90 });
+        ModUtils::write_bytes(base + 0x174456, { 0x90, 0x90 });
+        ModUtils::write_bytes(base + 0x174460, { 0x90, 0x90, 0x90 });
+        //Allows you to scroll out the editor
+        ModUtils::write_bytes(base + 0x8FAAC, { 0xEB });
+        ModUtils::write_bytes(base + 0x8FA95, { 0xEB });
+        ModUtils::write_bytes(base + 0x8FAC5, { 0xEB });
+        ModUtils::write_bytes(base + 0x8FADC, { 0xEB });
+        //ZoomInBypass
+        ModUtils::write_bytes(base + 0x87801, { 0x90, 0x90, 0x90 });
+        ModUtils::write_bytes(base + 0x87806, { 0x90, 0x90, 0x90 });
+        //PlaytestZoomBypass
+        ModUtils::write_bytes(base + 0x1697A9, { 0x90, 0x90 });
+        //SmoothEditorTrail
+        ModUtils::write_bytes(base + 0x16AB0D, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 });
+        //Music Sync Correction
+        ModUtils::write_bytes(base + 0x208808, { 0xEB, 0x08 });
     }
 
     LoadLibrary("cocos-explorer.dll");
-    CCFileUtils::sharedFileUtils()->addSearchPath("mods");
-    CCFileUtils::sharedFileUtils()->addSearchPath("adaf-dll");
 
     return 0;
 }
