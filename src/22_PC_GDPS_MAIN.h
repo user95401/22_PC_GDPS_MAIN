@@ -17,16 +17,18 @@
 #include "LevelAreaInnerLayer.hpp"
 #include "LevelAreaLayer.hpp"
 
-bool idontgiveashitbro = false;
-bool hooksLoaded = false;
+#include "Gameplay.hpp"
+#include "Objects.hpp"
+#include "OtherLayers.hpp"
+#include "LevelEditor.hpp"
 
-PlayLayer* PlayLayerFromINit;
-bool shouldPlaySpeedParticle = true;
-int lastSelectedObj = 0;
-
-bool isSwingCopterMode = false;
-int oldShipIcon;
-
-const char* version = "1.20";
+class ModBase {
+protected:
+    void ondontgiveashit(cocos2d::CCObject*);
+public:
+    inline static const char* version = "1.10-pre1";
+    inline static bool idontgiveashitbro = false;
+    static void msg(CCLayer* self, const char* redText = "", const char* customMsg = "");
+};
 
 // TODO: установите здесь ссылки на дополнительные заголовки, требующиеся для программы.

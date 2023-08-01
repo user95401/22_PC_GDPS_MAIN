@@ -2,7 +2,7 @@
 
 const char* EventLevelPage::getEventTimeString()
 {
-    switch (rand() % 21)
+    switch (rand() % 22)
     {
     case 0:
         return "New event level in ... ?";
