@@ -27,4 +27,4 @@ add_library(LoadLibrary SHARED "LoadLibrary.cpp" "verInf.rc" ${curly-eureka-src}
 target_include_directories(LoadLibrary PRIVATE ${curly-eureka-incl})
 target_link_libraries(LoadLibrary minhook cocos2d)
 
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/)
+set(LIBRARY_OUTPUT_PATH "D:/Games/user666/2.2 PC GDPS/adaf-dll")

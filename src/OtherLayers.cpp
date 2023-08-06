@@ -75,7 +75,7 @@ public:
     void onUpdateHttpResponse(CCHttpClient* client, CCHttpResponse* response) {
         std::vector<char>* responseData = response->getResponseData();
         std::string responseString(responseData->begin(), responseData->end());
-        if (responseString != ModBase::version || !strstr(ModBase::version, "pre")) {
+        if (responseString != ModBase::version) {
             AchievementNotifier::sharedState()->notifyAchievement("Update available!", ("You can download actual " + responseString + " version on the website.").c_str(), "GJ_downloadsIcon_001.png", true);
         }
     }
@@ -101,12 +101,14 @@ bool __fastcall MenuLayer_init_H(MenuLayer* self) {
     versionLabel->runAction(versionLabelrepeat);
 
     //udate if sddso herer
-    CCHttpRequest* request = new CCHttpRequest;
-    request->setUrl("http://gdps22pc.webq2e.ru/lastUpdate.php");
-    request->setRequestType(CCHttpRequest::HttpRequestType::kHttpPost);
-    request->setResponseCallback(self, httpresponse_selector(MenuLayerMod::onUpdateHttpResponse));
-    CCHttpClient::getInstance()->send(request);
-    request->release();
+    if(!strstr(ModBase::version, "pre")){
+        CCHttpRequest* request = new CCHttpRequest;
+        request->setUrl("http://gdps22pc.webq2e.ru/lastUpdate.php");
+        request->setRequestType(CCHttpRequest::HttpRequestType::kHttpPost);
+        request->setResponseCallback(self, httpresponse_selector(MenuLayerMod::onUpdateHttpResponse));
+        CCHttpClient::getInstance()->send(request);
+        request->release();
+    }
 
     CCMenu* aFirstMenu = (CCMenu*)self->m_profileBtn->getParent();
     CCMenuItemSpriteExtra* playBtn = (CCMenuItemSpriteExtra*)aFirstMenu->getChildren()->objectAtIndex(0);

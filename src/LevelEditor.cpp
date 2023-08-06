@@ -44,8 +44,9 @@ void __fastcall EditorUI_setupCreateMenu_H(EditorUI* self, void*) {
     EditorUI_setupCreateMenu(self);
     //tab6
     auto tab6 = (EditButtonBar*)(self->m_pCreateButtonBars->objectAtIndex(6));
-    tab6->m_pButtonArray->insertObject(self->getCreateBtn(3005, 4), 4);
-    tab6->m_pButtonArray->insertObject(self->getCreateBtn(3004, 4), 13);
+    tab6->m_pButtonArray->insertObject(self->getCreateBtn(3005, 4), 4);//spider pad
+    tab6->m_pButtonArray->insertObject(self->getCreateBtn(3004, 4), 13);//spider orb
+    tab6->m_pButtonArray->insertObject(self->getCreateBtn(2926, 4), 17);//green portal
     tab6->reloadItemsInNormalSize();
     //tab7
     auto tab7 = (EditButtonBar*)(self->m_pCreateButtonBars->objectAtIndex(7));

@@ -26,7 +26,7 @@ class ModBase {
 protected:
     void ondontgiveashit(cocos2d::CCObject*);
 public:
-    inline static const char* version = "1.10-pre1";
+    inline static const char* version = "1.11";
     inline static bool idontgiveashitbro = false;
     static void msg(CCLayer* self, const char* redText = "", const char* customMsg = "");
 };

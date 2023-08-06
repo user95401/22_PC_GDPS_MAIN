@@ -60,7 +60,6 @@ void __fastcall PlayLayer_resetLevel_H(PlayLayer* self) {
     self->m_pObjectLayer->setScale(1.0);
     self->m_bottomGround->setScale(1.0);
     self->m_topGround->setScaleX(1.0);
-    PlayLayerMod::enableTheCameraYFolow = false;
 }
 
 PlayLayer* (__cdecl* PlayLayer_levelComplete)(PlayLayer*);
@@ -138,10 +137,8 @@ void __fastcall bumpPlayer_H(GJBaseGameLayer* self, int, gd::PlayerObject* Playe
 inline void(__thiscall* PlayerObject_update)(PlayerObject* self, float);
 void __fastcall PlayerObject_update_H(PlayerObject* self, void*, float dtidk) {
     PlayerObject_update(self, dtidk);
-    if (PlayLayerMod::enableTheCameraYFolow && self->m_isInPlayLayer && PlayLayerMod::PlayLayerFromINit->m_pPlayer1->m_position.y >= 180.0) {
-        PlayLayerMod::PlayLayerFromINit->m_cameraYLocked = true;
+    if (PlayLayerMod::enableTheCameraYFolow && self->m_isInPlayLayer && PlayLayerMod::PlayLayerFromINit->m_pPlayer1->m_position.y >= 80.0) {
         PlayLayerMod::PlayLayerFromINit->m_cameraY = PlayLayerMod::PlayLayerFromINit->m_pPlayer1->m_position.y - 140;
-        PlayLayerMod::PlayLayerFromINit->m_cameraX = PlayLayerMod::PlayLayerFromINit->m_cameraX - 210;
     }
 }
 

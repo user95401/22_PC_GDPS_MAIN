@@ -81,10 +81,6 @@ void __fastcall LoadingLayer_loadAssets_H(LoadingLayer* self) {
         CCFileUtils::sharedFileUtils()->addSearchPath("adaf-dll");
 
         //ObjectToolbox::sharedState()->addObject(2140, "pixelart_040_001.png");
-
-        ObjectToolbox::sharedState()->addObject(3004, "spiderRing_001.png");
-        GameObject* spiderRing_001 = (GameObject*)ObjectToolbox::sharedState()->getUserObject();
-        ObjectToolbox::sharedState()->addObject(3005, "spiderBump_001.png");
     }
     self->removeChildByTag(777);
     if (!hooksLoaded && self->m_nLoadIndex > 8) {
@@ -163,7 +159,7 @@ CCLabelBMFont* CCLabelBMFont_create_H(const char* str, const char* fntFile) {
         }
         if (std::string(str) == "Randomize Start") {
             if (LevelEditor::lastSelectedObj->m_nObjectID == 3004 || LevelEditor::lastSelectedObj->m_nObjectID == 3005 //spider orb anda pad
-                || LevelEditor::lastSelectedObj->m_nObjectID == 35 || LevelEditor::lastSelectedObj->m_nObjectID == 140 || LevelEditor::lastSelectedObj->m_nObjectID == 1332 || LevelEditor::lastSelectedObj->m_nObjectID == 67 //bumps
+                || LevelEditor::lastSelectedObj->m_nObjectID == 35 || LevelEditor::lastSelectedObj->m_nObjectID == 140 || LevelEditor::lastSelectedObj->m_nObjectID == 1332 || LevelEditor::lastSelectedObj->m_nObjectID == 67 || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeInverseGravityPortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeNormalGravityPortal
                 || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeShipPortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeCubePortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeBallPortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeUfoPortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeWavePortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeRobotPortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeSpiderPortal //noground portals
                 ) str = "Allow multi activate";
             if (LevelEditor::lastSelectedObj->m_nObjectID == 1913)

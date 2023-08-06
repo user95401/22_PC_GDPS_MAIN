@@ -108,12 +108,18 @@ void __fastcall GameObject_activateObject_H(GameObject* self, int, PlayerObject*
             if (PlayLayerMod::PlayLayerMod::PlayLayerFromINit && player->m_isInPlayLayer) PlayLayerMod::PlayLayerFromINit->animateOutGround(!self->m_bHasBeenActivated);
         //enableTheCameraYFolow
         PlayLayerMod::enableTheCameraYFolow = bool(self->m_fAnimSpeed > 0.585f && self->m_fAnimSpeed < 0.612f);
-        ModUtils::copyToClipboard(std::to_string(self->m_fAnimSpeed).c_str());
+        //ModUtils::copyToClipboard(std::to_string(self->m_fAnimSpeed).c_str());
     }
-    //multiactive bumps
-    if (self->m_bRandomisedAnimStart && bool(self->m_nObjectID == 3005 || self->m_nObjectID == 35 || self->m_nObjectID == 140 || self->m_nObjectID == 1332 || self->m_nObjectID == 67))
+    //other multiactive
+    if (self->m_bRandomisedAnimStart && bool(self->m_nObjectID == 3005 || self->m_nObjectID == 35 || self->m_nObjectID == 140 || self->m_nObjectID == 1332 || self->m_nObjectID == 67 || self->m_nObjectType==kGameObjectTypeInverseGravityPortal ||self->m_nObjectType == kGameObjectTypeNormalGravityPortal))
     {
         self->m_bHasBeenActivated = false; self->m_bHasBeenActivatedP2 = false;
+    }
+    //ModUtils::copyToClipboard(std::string(std::to_string(self->m_obObjectSize.width) + "," + std::to_string(self->m_obObjectSize.height)).c_str());
+    //green portale
+    if (self->m_nObjectID == 2926) {//green portal
+        if (player->m_isUpsideDown) self->m_nObjectType = kGameObjectTypeNormalGravityPortal;//type
+        else self->m_nObjectType = kGameObjectTypeInverseGravityPortal;//type
     }
 }
 
@@ -147,10 +153,7 @@ void __fastcall triggerObject_H(GameObject* self, void*, GJBaseGameLayer* baseGa
     if (self->m_nObjectID == 1913) {
         float speed = 0.5;
         if (self->m_bRandomisedAnimStart) speed = self->m_fAnimSpeed;
-        if (self->m_bEditor) baseGameLayer->m_pObjectLayer->runAction(CCEaseInOut::create(CCScaleTo::create(speed, self->m_fAnimSpeed), 2.00f));
-        else {
-            PlayLayerMod::PlayLayerFromINit->runAction(CCEaseInOut::create(CCScaleTo::create(speed, self->m_fAnimSpeed), 2.00f));
-        }
+        baseGameLayer->m_pObjectLayer->runAction(CCEaseInOut::create(CCScaleTo::create(speed, self->m_fAnimSpeed), 2.00f));
     }
     if (self->m_nObjectID == 1934) {
         GameSoundManager::sharedState()->stopBackgroundMusic();
@@ -194,22 +197,20 @@ void __fastcall GameObject_customSetup_H(GameObject* self, int) {
         if (self->m_bIsGroupParent) self->m_nObjectType=kGameObjectTypeCubePortal;
     }*/
     //noGround
-    if (self->m_nObjectType == kGameObjectTypeShipPortal || self->m_nObjectType == kGameObjectTypeCubePortal || self->m_nObjectType == kGameObjectTypeBallPortal || self->m_nObjectType == kGameObjectTypeUfoPortal || self->m_nObjectType == kGameObjectTypeWavePortal || self->m_nObjectType == kGameObjectTypeRobotPortal || self->m_nObjectType == kGameObjectTypeSpiderPortal) {
+    if (self->m_nObjectType == kGameObjectTypeShipPortal || self->m_nObjectType == kGameObjectTypeCubePortal || self->m_nObjectType == kGameObjectTypeBallPortal || self->m_nObjectType == kGameObjectTypeUfoPortal || self->m_nObjectType == kGameObjectTypeWavePortal || self->m_nObjectType == kGameObjectTypeRobotPortal || self->m_nObjectType == kGameObjectTypeSpiderPortal)
         self->m_bIsEffectObject = true;
-    }
-    //multiactive bumps
-    if (bool(self->m_nObjectID == 3005 || self->m_nObjectID == 35 || self->m_nObjectID == 140 || self->m_nObjectID == 1332 || self->m_nObjectID == 67))
-    {
+    //multiactive
+    if (bool(self->m_nObjectID == 3005 || self->m_nObjectID == 35 || self->m_nObjectID == 140 || self->m_nObjectID == 1332 || self->m_nObjectID == 67 || self->m_nObjectType == kGameObjectTypeInverseGravityPortal || self->m_nObjectType == kGameObjectTypeNormalGravityPortal))
         self->m_bIsEffectObject = true;
-    }
-    if (self->m_nObjectID == 3004) {
+
+    if (self->m_nObjectID == 3004) {//spider ring
         //main setups
         self->m_nObjectType = kGameObjectTypePinkJumpRing;
         self->m_pBaseColor->defaultColorID = 1011;
         self->m_bIsEffectObject = true;
 
     }
-    if (self->m_nObjectID == 3005) {
+    if (self->m_nObjectID == 3005) {//spider pad
         //main setups
         self->m_nObjectType = kGameObjectTypePinkJumpPad;//type
         self->m_pBaseColor->defaultColorID = 1011;//defaultColor
@@ -222,8 +223,15 @@ void __fastcall GameObject_customSetup_H(GameObject* self, int) {
         self->m_obBoxOffset = CCPoint(0, -10);
         self->m_obBoxOffset2 = CCPoint(0, -10);
     }
-    if (self->m_sTextureName.find("pixelart_") != self->m_sTextureName.npos) {
+    if (self->m_sTextureName.find("pixelart_") != self->m_sTextureName.npos) {//any pixel art
         self->m_nObjectType = kGameObjectTypeDecoration;
+    }
+
+    if (self->m_nObjectID == 2926) {//green portal
+        self->m_nObjectType = kGameObjectTypeInverseGravityPortal;//type
+        self->setAnchorPoint(CCPoint(self->getAnchorPoint().x - 0.1, self->getAnchorPoint().y - 0.001));// totally :smiling_face_with_tear:
+        self->m_obObjectSize.setSize(25.000000, 75.000000);
+        self->m_bIsEffectObject = true;
     }
 
     //triggers
@@ -240,6 +248,10 @@ void __fastcall GameObject_customSetup_H(GameObject* self, int) {
         self->setDisplayFrame(cocos2d::CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(
             "portal_14_front_001.png"));
         self->runAction(CCRepeatForever::create(CCTintTo::create(0.0, 255, 255, 0)));
+    }
+    if (self->m_sTextureName.find("portal_19") != self->m_sTextureName.npos && self->m_bEditor) {
+        self->setDisplayFrame(cocos2d::CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(
+            "portal_19_front_001.png"));
     }
 }
 
@@ -280,4 +292,8 @@ void CreateObjectsThemedHooks() {
     HOOK(base + 0xd1790, triggerObject, false);
     //HOOK(base + 0xEBE50, objectFromString, false);
     //HOOK(base + 0xed0c0, myGSaveString, false);
+
+    ObjectToolbox::sharedState()->addObject(3004, "spiderRing_001.png");
+    ObjectToolbox::sharedState()->addObject(3005, "spiderBump_001.png");
+    ObjectToolbox::sharedState()->addObject(2926, "portal_19_unity_001.png");
 }

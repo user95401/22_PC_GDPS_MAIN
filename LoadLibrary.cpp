@@ -12,25 +12,7 @@ DWORD WINAPI thread_func(void* hModule) {
     LoadLibrary("rainsystem.dll");
 
     //modsth().extension() == ".so" || it->path().extension() == ".dylib")) {
-    LoadLibrary("Libs\\22_PC_GDPS_MAIN.dll");
-    LoadLibrary("C:\\Users\\Lenovo\\source\\22_PC_GDPS_MAIN\\Release\\22_PC_GDPS_MAIN.dll");
-    LoadLibrary("Libs\\gdPlatformerMode-minimal.dll");
-    LoadLibrary("Libs\\absolute_lm.By-Absolute.dll");
-    LoadLibrary("Libs\\Patches.dll");
-    LoadLibrary("Libs\\rgb-color-input.dll");
-    LoadLibrary("Libs\\msvcr180.dll");
-    LoadLibrary("Libs\\cocosTrailBugFix.dll");
-    LoadLibrary("Libs\\MenuMusicToggle.dll");
-    LoadLibrary("Libs\\SaiModPack.dll");
-    //other
-    LoadLibrary("Libs\\shell32.dll");
-    LoadLibrary("Libs\\kernel32.dll");
-    LoadLibrary("Libs\\opengl32.dll");
-    LoadLibrary("Libs\\advapi32.dll");
-    LoadLibrary("Libs\\api-ms-win-core-path-l1-1-0.dll"); //!!!!!!
-    LoadLibrary("Libs\\api-ms-win-crt-runtime-l1-1-0.dll"); //!!!!!!
-    LoadLibrary("Libs\\advapi32res.dll");
-    LoadLibrary("Libs\\ucrtbased.dll");
+    LoadLibrary("adaf-dll\\Release\\22_PC_GDPS_MAIN.dll");
     return 0;
 }
 
