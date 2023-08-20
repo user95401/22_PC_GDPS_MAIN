@@ -145,6 +145,8 @@ CCLabelBMFont* CCLabelBMFont_create_H(const char* str, const char* fntFile) {
                 str = "Object setup";
             if (LevelEditor::lastSelectedObj->m_nObjectID == 1913)
                 str = "Zoom thing setup...";
+            if (LevelEditor::lastSelectedObj->m_nObjectID == 1934)
+                str = "Song trigger setup";
         }
         if (std::string(str) == "Speed: ") {
             if (LevelEditor::lastSelectedObj->m_nObjectID == 3004 || LevelEditor::lastSelectedObj->m_nObjectID == 3005 || LevelEditor::lastSelectedObj->m_nObjectID == 3005  //spider orb anda pad
@@ -153,7 +155,7 @@ CCLabelBMFont* CCLabelBMFont_create_H(const char* str, const char* fntFile) {
                 )
                 str = "(No features)";
             if (LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeShipPortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeCubePortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeBallPortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeUfoPortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeWavePortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeRobotPortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeSpiderPortal) //noground portals
-                str = "Feature id: ";
+                {str = ">:3"; fntFile = "gjFont07.fnt";}
             if (LevelEditor::lastSelectedObj->m_nObjectID == 1913)
                 str = "Scale: ";
         }
@@ -176,7 +178,7 @@ CCLabelBMFont* CCLabelBMFont_create_H(const char* str, const char* fntFile) {
             if (LevelEditor::lastSelectedObj->m_nObjectID == 35 || LevelEditor::lastSelectedObj->m_nObjectID == 140 || LevelEditor::lastSelectedObj->m_nObjectID == 1332 || LevelEditor::lastSelectedObj->m_nObjectID == 67)
                 info = "Allows multi activate feature.";
             if (LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeShipPortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeCubePortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeBallPortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeUfoPortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeWavePortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeRobotPortal || LevelEditor::lastSelectedObj->m_nObjectType == kGameObjectTypeSpiderPortal)
-                info = "0.50: Just will animate out grounds when enter portal\n0.60: Toggle camera follow (crazy shit) and animate out grounds";//noGround
+                info = "Allows multi activate feature.\nFree mode is buggy!";
             if (LevelEditor::lastSelectedObj->m_nObjectID == 1913)
                 info = "No"; 
             if (LevelEditor::lastSelectedObj->m_nObjectID == 1934)
@@ -203,7 +205,7 @@ DWORD WINAPI thread_func(void* hModule) {
     CreatePlayLayerHooks();
     CreatePlayerObjectHooks();
     CreateObjectsThemedHooks();
-    CreateOtherLayersHooks();
+    CreateGameLayersHooks();
     CreateLevelEditorHooks();
 
     // enable all hooks you've created with minhook

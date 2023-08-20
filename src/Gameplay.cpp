@@ -1,14 +1,16 @@
 ﻿#include "Gameplay.hpp"
 
-/*
-██████╗░██╗░░░░░░█████╗░██╗░░░██╗██╗░░░░░░█████╗░██╗░░░██╗███████╗██████╗░
-██╔══██╗██║░░░░░██╔══██╗╚██╗░██╔╝██║░░░░░██╔══██╗╚██╗░██╔╝██╔════╝██╔══██╗
-██████╔╝██║░░░░░███████║░╚████╔╝░██║░░░░░███████║░╚████╔╝░█████╗░░██████╔╝
-██╔═══╝░██║░░░░░██╔══██║░░╚██╔╝░░██║░░░░░██╔══██║░░╚██╔╝░░██╔══╝░░██╔══██╗
-██║░░░░░███████╗██║░░██║░░░██║░░░███████╗██║░░██║░░░██║░░░███████╗██║░░██║
-╚═╝░░░░░╚══════╝╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚═╝░░╚═╝
-*/
-void PlayLayerMod::updateByGamePlayOptins(PlayLayer* self) {
+inline void(__thiscall* updateProgressbar)(PlayLayerExt*);
+void __fastcall updateProgressbar_H(PlayLayerExt* self) {
+    updateProgressbar(self);
+    PlayLayerExt::PlayLayerFromINit = (PlayLayer*)self;
+    //shit
+    if (PlayLayerExt::freeMode && self->isRunning() && !self->m_isDead) {
+        if (!self->m_bIsDualMode) self->m_bIsDualMode = true; 
+        self->m_pPlayer2->m_position = CCPoint(-999999, self->m_pPlayer1->m_position.y+5);
+    }
+}
+void PlayLayerExt::updateByGamePlayOptins(PlayLayer* self) {
     //sai mod pack settings
     GameManager::sharedState()->setGameVariable("showLvlInfo", GameManager::sharedState()->getGameVariable("0109"));//showLvlInfo 0109
     GameManager::sharedState()->setGameVariable("practiceMusic", GameManager::sharedState()->getGameVariable("0125"));//practiceMusic 0125
@@ -31,7 +33,7 @@ void PlayLayerMod::updateByGamePlayOptins(PlayLayer* self) {
 bool(__thiscall* PlayLayer_init)(PlayLayer*, GJGameLevel*);
 bool __fastcall PlayLayer_init_H(PlayLayer* self, int edx, GJGameLevel* level) {
     if (!PlayLayer_init(self, level)) return false;
-    PlayLayerMod::PlayLayerFromINit = (PlayLayer*)self;
+    PlayLayerExt::PlayLayerFromINit = (PlayLayer*)self;
     auto gm = gd::GameManager::sharedState();
     //smoothFix
     if (gm->getGameVariable("0023") == true) {
@@ -40,23 +42,25 @@ bool __fastcall PlayLayer_init_H(PlayLayer* self, int edx, GJGameLevel* level) {
         AchievementNotifier::sharedState()->notifyAchievement("Do not enable Smooth Fix!", "just dont pls", "exMark_001.png", true);
         GameSoundManager::sharedState()->playEffect("door001.ogg");
     }
-    PlayLayerMod::updateByGamePlayOptins(self);
+    PlayLayerExt::updateByGamePlayOptins(self);
 
     GameManager::sharedState()->setPlayerShip(GameManager::sharedState()->getIntGameVariable("oldShipIcon"));//bring up by oldShipIcon
     if (GameManager::sharedState()->getPlayerShip() != 170) GameManager::sharedState()->setIntGameVariable("oldShipIcon", GameManager::sharedState()->getPlayerShip());//save oldShipIcon
     
-    PlayLayerMod::enableTheCameraYFolow = false;
+    PlayLayerExt::freeMode = false;
     return true;
 }
 
 PlayLayer* (__cdecl* PlayLayer_resetLevel)(PlayLayer*);
 void __fastcall PlayLayer_resetLevel_H(PlayLayer* self) {
     PlayLayer_resetLevel(self);
-    PlayLayerMod::updateByGamePlayOptins(self);
-    if (PlayLayerMod::isSwingCopterMode && !self->m_isPracticeMode || !self->m_pPlayer1->m_isShip) {
+    PlayLayerExt::updateByGamePlayOptins(self);
+    if (PlayLayerExt::isSwingCopterMode && !self->m_isPracticeMode || !self->m_pPlayer1->m_isShip) {
         GameManager::sharedState()->setPlayerShip(GameManager::sharedState()->getIntGameVariable("oldShipIcon"));//bring up by oldShipIcon
-        PlayLayerMod::isSwingCopterMode = false;
+        PlayLayerExt::isSwingCopterMode = false;
     }
+    PlayLayerExt::freeMode = false;
+    self->m_bIsDualMode = self->m_levelSettings->m_startDual;
     self->m_pObjectLayer->setScale(1.0);
     self->m_bottomGround->setScale(1.0);
     self->m_topGround->setScaleX(1.0);
@@ -88,12 +92,12 @@ bool __fastcall PlayLayer_levelComplete_H(PlayLayer* self) {
 PlayLayer* (__cdecl* PlayLayer_onQuit)(PlayLayer*);
 void __fastcall PlayLayer_onQuit_H(PlayLayer* self) {
     PlayLayer_onQuit(self);
-    PlayLayerMod::updateByGamePlayOptins(self);
-    if (PlayLayerMod::isSwingCopterMode) {
+    PlayLayerExt::updateByGamePlayOptins(self);
+    if (PlayLayerExt::isSwingCopterMode) {
         GameManager::sharedState()->setPlayerShip(GameManager::sharedState()->getIntGameVariable("oldShipIcon"));//bring up by oldShipIcon
     }
-    PlayLayerMod::isSwingCopterMode = false;
-    PlayLayerMod::enableTheCameraYFolow = false;
+    PlayLayerExt::isSwingCopterMode = false;
+    PlayLayerExt::freeMode = false;
 }
 
 void CreatePlayLayerHooks() {
@@ -103,13 +107,6 @@ void CreatePlayLayerHooks() {
     HOOK(base + 0x20D810, PlayLayer_onQuit, true);
 }
 
-
-//██████╗░██╗░░░░░░█████╗░██╗░░░██╗███████╗██████╗░░█████╗░██████╗░░░░░░██╗███████╗░█████╗░████████╗
-//██╔══██╗██║░░░░░██╔══██╗╚██╗░██╔╝██╔════╝██╔══██╗██╔══██╗██╔══██╗░░░░░██║██╔════╝██╔══██╗╚══██╔══╝
-//██████╔╝██║░░░░░███████║░╚████╔╝░█████╗░░██████╔╝██║░░██║██████╦╝░░░░░██║█████╗░░██║░░╚═╝░░░██║░░░
-//██╔═══╝░██║░░░░░██╔══██║░░╚██╔╝░░██╔══╝░░██╔══██╗██║░░██║██╔══██╗██╗░░██║██╔══╝░░██║░░██╗░░░██║░░░
-//██║░░░░░███████╗██║░░██║░░░██║░░░███████╗██║░░██║╚█████╔╝██████╦╝╚█████╔╝███████╗╚█████╔╝░░░██║░░░
-//╚═╝░░░░░╚══════╝╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░░╚════╝░╚══════╝░╚════╝░░░░╚═╝░░░
 inline void(__thiscall* PlayerObject_ringJump)(PlayerObject*, GameObject*);
 void __fastcall PlayerObject_ringJump_H(gd::PlayerObject* self, int, gd::GameObject* ring) {
     PlayerObject_ringJump(self, ring);
@@ -117,6 +114,15 @@ void __fastcall PlayerObject_ringJump_H(gd::PlayerObject* self, int, gd::GameObj
         self->spiderTestJump(true);
         if (ring->m_bRandomisedAnimStart) ring->m_bHasBeenActivated = false;
         if (ring->m_bRandomisedAnimStart) ring->m_bHasBeenActivatedP2 = false;
+    }
+    //green portale
+    if (ring->m_nObjectID == 2926) {
+        if (!ring->m_bHasBeenActivated) {
+            if (self->m_isInPlayLayer) PlayLayerExt::PlayLayerFromINit->playGravityEffect(!self->m_isUpsideDown);
+            self->flipGravity(!self->m_isUpsideDown, true);
+        }
+        if (!ring->m_bRandomisedAnimStart) 
+            ring->m_bHasBeenActivated = true;
     }
 }
 
@@ -131,14 +137,6 @@ void __fastcall bumpPlayer_H(GJBaseGameLayer* self, int, gd::PlayerObject* Playe
     if (bumper->m_bRandomisedAnimStart && bool(bumper->m_nObjectID == 3005 || bumper->m_nObjectID == 35 || bumper->m_nObjectID == 140 || bumper->m_nObjectID == 1332 || bumper->m_nObjectID == 67)) {
         bumper->m_bHasBeenActivated = false;
         bumper->m_bHasBeenActivatedP2 = false;
-    }
-}
-
-inline void(__thiscall* PlayerObject_update)(PlayerObject* self, float);
-void __fastcall PlayerObject_update_H(PlayerObject* self, void*, float dtidk) {
-    PlayerObject_update(self, dtidk);
-    if (PlayLayerMod::enableTheCameraYFolow && self->m_isInPlayLayer && PlayLayerMod::PlayLayerFromINit->m_pPlayer1->m_position.y >= 80.0) {
-        PlayLayerMod::PlayLayerFromINit->m_cameraY = PlayLayerMod::PlayLayerFromINit->m_pPlayer1->m_position.y - 140;
     }
 }
 
@@ -166,15 +164,24 @@ void(__thiscall* updateJump) (gd::PlayerObject* __this, float delta);
 void  __fastcall  updateJump_H(gd::PlayerObject* __this, void*) {
     auto delta = 0.f;
     __asm movss[delta], xmm1;
-    if (!PlayLayerMod::isSwingCopterMode) {
+    //shit
+    if (PlayLayerExt::freeMode && 
+        __this->m_isInPlayLayer && 
+        !PlayLayerExt::PlayLayerFromINit->m_isDead && 
+        PlayLayerExt::PlayLayerFromINit->m_pPlayer1->m_position.y > 104) {
+        PlayLayerExt::PlayLayerFromINit->m_cameraY = PlayLayerExt::PlayLayerFromINit->m_pPlayer1->m_position.y - 120;
+    }
+    //swincopter
+    if (!PlayLayerExt::isSwingCopterMode) {
+        *reinterpret_cast<double*>(reinterpret_cast<uintptr_t>(__this) + 0x528) = 1.0;
         return updateJump(__this, delta);
     }
     return update_swing_copter(__this, delta);
 }
 
 void CreatePlayerObjectHooks() {
+    HOOK(base + 0x208020, updateProgressbar, false);
     HOOK(base + 0x1E8F80, updateJump, true);
     HOOK(base + 0x1f4ff0, PlayerObject_ringJump, true);
     HOOK(base + 0x10ed50, bumpPlayer, true);
-    HOOK(base + 0x1E8200, PlayerObject_update, true);//fk
 }

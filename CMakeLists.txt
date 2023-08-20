@@ -28,3 +28,4 @@ target_include_directories(LoadLibrary PRIVATE ${curly-eureka-incl})
 target_link_libraries(LoadLibrary minhook cocos2d)
 
 set(LIBRARY_OUTPUT_PATH "D:/Games/user666/2.2 PC GDPS/adaf-dll")
+#set(LIBRARY_OUTPUT_PATH "C:/Users/Lenovo/AppData/Roaming/2.2 PC GDPS/adaf-dll")

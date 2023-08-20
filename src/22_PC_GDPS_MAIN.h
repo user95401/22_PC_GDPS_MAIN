@@ -16,10 +16,11 @@
 #include "EventLevelPage.hpp"
 #include "LevelAreaInnerLayer.hpp"
 #include "LevelAreaLayer.hpp"
+#include "ObjectSetupPopups.hpp"
 
 #include "Gameplay.hpp"
 #include "Objects.hpp"
-#include "OtherLayers.hpp"
+#include "GameLayers.hpp"
 #include "LevelEditor.hpp"
 
 class ModBase {

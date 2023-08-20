@@ -1,4 +1,4 @@
-﻿#include "OtherLayers.hpp"
+﻿#include "GameLayers.hpp"
 
 class CreatorLayerMod : public cocos2d::CCLayer {
 public:
@@ -36,7 +36,7 @@ bool __fastcall CreatorLayer_init_H(CreatorLayer* self) {
     if (!CreatorLayer_init(self)) return false;
 
     CCMenu* menu = (CCMenu*)self->getChildren()->objectAtIndex(2);
-    if (menu->getChildrenCount() == 2) {
+    if (true){//menu->getChildrenCount() == 2) {
         //row1
         addclbtn("GJ_createBtn_001.png", menu_selector(CreatorLayer::onMyLevels), { -180,90 }, menu);
         addclbtn("GJ_savedBtn_001.png", menu_selector(CreatorLayer::onSavedLevels), { -90,90 }, menu);
@@ -315,7 +315,7 @@ void __fastcall ProfilePage_loadPageFromUserInfo_H(ProfilePage* self, void*, gd:
     layer->addChild(swing, 13);
 }
 
-void CreateOtherLayersHooks() {
+void CreateGameLayersHooks() {
     HOOK(base + 0x1907B0, MenuLayer_init, false);
     //HOOK(base + 0x191b50, MenuLayer_onPlay, false);
     HOOK(base + 0x4DE40, CreatorLayer_init, false);

@@ -5,4 +5,4 @@ class OtherLayers {
 public:
 };
 
-void CreateOtherLayersHooks();
+void CreateGameLayersHooks();

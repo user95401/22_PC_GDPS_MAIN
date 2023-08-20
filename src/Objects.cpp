@@ -1,87 +1,11 @@
 ﻿#include "Objects.hpp"
 
-CustomTriggerPopup::CustomTriggerPopup() :
-    FLAlertLayer() {
-    m_nJoystickConnected = -1;
-    m_bNoElasticity = true;
-    m_effectObject = nullptr;
-}
-CustomTriggerPopup* CustomTriggerPopup::create(EffectGameObject* obj) {
-    CustomTriggerPopup* ret = new CustomTriggerPopup();
-    if (ret && ret->init(obj)) ret->autorelease();
-    else CC_SAFE_DELETE(ret);
-    return ret;
-}
-void CustomTriggerPopup::onTouch(CCObject* sneder) { m_effectObject->m_bTouchTriggered = bool(!m_effectObject->m_bTouchTriggered); update(); }
-void CustomTriggerPopup::onSpawn(CCObject* sneder) { m_effectObject->m_bSpawnTriggered = bool(!m_effectObject->m_bSpawnTriggered); update(); }
-void CustomTriggerPopup::update() {
-    saveString->setString(m_effectObject->getSaveString().c_str());
-}
-void CustomTriggerPopup::onClose(CCObject* callback) {
-    m_effectObject = reinterpret_cast<EffectGameObject*>(GameObject::objectFromString(m_effectObject->getSaveString(), true));
-    this->removeFromParentAndCleanup(true);
-}
-void CustomTriggerPopup::keyBackClicked() {
-    onClose(NULL);
-}
-bool CustomTriggerPopup::init(EffectGameObject* obj) {
-    m_effectObject = obj;
-    if (CCLayerColor::initWithColor(ccc4(0, 0, 0, 150)) && m_effectObject->m_nObjectID > 1) {
-        registerWithTouchDispatcher();
-        setTouchEnabled(true);
-        setKeypadEnabled(true);
-
-        m_pLayer = CCLayer::create();
-        addChild(m_pLayer);
-        m_pButtonMenu = CCMenu::create();
-        addChild(m_pButtonMenu);
-
-        auto scale9 = extension::CCScale9Sprite::create("GJ_square01.png");
-        scale9->setContentSize(CCSizeMake(300, 280));
-        m_pButtonMenu->addChild(scale9, -2);
-
-        m_pButtonMenu->addChild(saveString = CCLabelBMFont::create(m_effectObject->getSaveString().c_str(), "chatFont.fnt", 160));
-
-        auto okBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("OK", 0, false, "goldFont.fnt", "GJ_button_01.png", 0, 1.0),
-            this, menu_selector(CustomTriggerPopup::onClose));
-        m_pButtonMenu->addChild(okBtn);
-        okBtn->setScale(0.8928571428571429);
-        okBtn->setPositionY(-113.0);
-
-        auto onTouchBtn = CCMenuItemToggler::createWithStandardSprites(this, menu_selector(CustomTriggerPopup::onTouch));
-        onTouchBtn->setScale(0.7142857142857143);
-        onTouchBtn->setPosition(-128.0, -68.5);
-        onTouchBtn->toggle(m_effectObject->m_bTouchTriggered);
-        m_pButtonMenu->addChild(onTouchBtn);
-
-        auto onSpawnBtn = CCMenuItemToggler::createWithStandardSprites(this, menu_selector(CustomTriggerPopup::onSpawn));
-        onSpawnBtn->setScale(0.7142857142857143);
-        onSpawnBtn->setPosition(-128.0, -108.5);
-        onSpawnBtn->toggle(m_effectObject->m_bSpawnTriggered);
-        m_pButtonMenu->addChild(onSpawnBtn);
-
-        auto SpawnTriggered = CCLabelBMFont::create("Spawn   \nTriggered", "bigFont.fnt");
-        SpawnTriggered->setScale(0.37142857142857144);
-        CCPoint SpawnTriggeredpos(-74.5, -108.0);
-        SpawnTriggered->setPosition(m_pLayer->convertToNodeSpace(SpawnTriggeredpos));
-        m_pButtonMenu->addChild(SpawnTriggered);
-
-        auto TouchTriggered = CCLabelBMFont::create("Touch    \nTriggered", "bigFont.fnt");
-        TouchTriggered->setScale(0.37142857142857144);
-        CCPoint TouchTriggeredpos(-76.0, -68.0);
-        TouchTriggered->setPosition(m_pLayer->convertToNodeSpace(TouchTriggeredpos));
-        m_pButtonMenu->addChild(TouchTriggered);
-        return true;
-    }
-    else return false;
-}
-
 inline void(__thiscall* GameObject_activateObject)(GameObject*, PlayerObject*);
 void __fastcall GameObject_activateObject_H(GameObject* self, int, PlayerObject* player) {
     GameObject_activateObject(self, player);
     if ("SwingCopter") {
         if (self->m_nObjectID == 1933) {
-            PlayLayerMod::isSwingCopterMode = true;
+            PlayLayerExt::isSwingCopterMode = true;
             if (GameManager::sharedState()->getPlayerShip() != 170) GameManager::sharedState()->setIntGameVariable("oldShipIcon", GameManager::sharedState()->getPlayerShip());//save oldShipIcon
             GameManager::sharedState()->setPlayerShip(170);
             player->toggleRobotMode(true);
@@ -89,14 +13,13 @@ void __fastcall GameObject_activateObject_H(GameObject* self, int, PlayerObject*
         }
         else if (self->m_nObjectType != kGameObjectTypeNormalGravityPortal && self->m_nObjectType != kGameObjectTypeInverseGravityPortal && self->m_nObjectType != kGameObjectTypeTeleportPortal) {
             GameManager::sharedState()->setPlayerShip(GameManager::sharedState()->getIntGameVariable("oldShipIcon"));//bring up by oldShipIcon
-            if (self->m_nObjectID == 13 && PlayLayerMod::isSwingCopterMode) {
+            if (self->m_nObjectID == 13 && PlayLayerExt::isSwingCopterMode) {
                 player->toggleRobotMode(true);
                 player->toggleFlyMode(true);
             }
-            PlayLayerMod::isSwingCopterMode = false;
+            PlayLayerExt::isSwingCopterMode = false;
         }
     }
-    //noGround
     if (self->m_nObjectType == kGameObjectTypeShipPortal || self->m_nObjectType == kGameObjectTypeCubePortal || self->m_nObjectType == kGameObjectTypeBallPortal || self->m_nObjectType == kGameObjectTypeUfoPortal || self->m_nObjectType == kGameObjectTypeWavePortal || self->m_nObjectType == kGameObjectTypeRobotPortal || self->m_nObjectType == kGameObjectTypeSpiderPortal) {
         //multiactive
         if (self->m_bRandomisedAnimStart)
@@ -105,9 +28,22 @@ void __fastcall GameObject_activateObject_H(GameObject* self, int, PlayerObject*
         }
         //animateOutGround
         if (self->m_fAnimSpeed > 0.49 && self->m_fAnimSpeed < 0.62)
-            if (PlayLayerMod::PlayLayerMod::PlayLayerFromINit && player->m_isInPlayLayer) PlayLayerMod::PlayLayerFromINit->animateOutGround(!self->m_bHasBeenActivated);
-        //enableTheCameraYFolow
-        PlayLayerMod::enableTheCameraYFolow = bool(self->m_fAnimSpeed > 0.585f && self->m_fAnimSpeed < 0.612f);
+            if (PlayLayerExt::PlayLayerFromINit && player->m_isInPlayLayer) {
+                PlayLayerExt::PlayLayerFromINit->animateOutGround(!self->m_bHasBeenActivated);
+            }
+        if (self->m_nObjectType == kGameObjectTypeCubePortal || self->m_nObjectType == kGameObjectTypeRobotPortal || !bool(self->m_fAnimSpeed > 0.49 && self->m_fAnimSpeed < 0.62)) {
+            if (PlayLayerExt::freeMode && player->m_isInPlayLayer)
+            {
+            PlayLayerExt::freeMode = false;
+            PlayLayerExt::PlayLayerFromINit->m_bIsDualMode = false;
+            player->flipGravity(false, false);
+            self->m_bHasBeenActivated = false; self->m_bHasBeenActivatedP2 = false;
+            PlayLayerExt::PlayLayerFromINit->animateOutGround(true);
+            if(!bool(self->m_nObjectType == kGameObjectTypeCubePortal || self->m_nObjectType == kGameObjectTypeRobotPortal))
+                PlayLayerExt::PlayLayerFromINit->animateInGround(true);
+            }
+        }
+        else PlayLayerExt::freeMode = bool(self->m_fAnimSpeed > 0.49 && self->m_fAnimSpeed < 0.62);
         //ModUtils::copyToClipboard(std::to_string(self->m_fAnimSpeed).c_str());
     }
     //other multiactive
@@ -116,11 +52,6 @@ void __fastcall GameObject_activateObject_H(GameObject* self, int, PlayerObject*
         self->m_bHasBeenActivated = false; self->m_bHasBeenActivatedP2 = false;
     }
     //ModUtils::copyToClipboard(std::string(std::to_string(self->m_obObjectSize.width) + "," + std::to_string(self->m_obObjectSize.height)).c_str());
-    //green portale
-    if (self->m_nObjectID == 2926) {//green portal
-        if (player->m_isUpsideDown) self->m_nObjectType = kGameObjectTypeNormalGravityPortal;//type
-        else self->m_nObjectType = kGameObjectTypeInverseGravityPortal;//type
-    }
 }
 
 inline void(__thiscall* triggerObject)(GameObject*, GJBaseGameLayer*);//0xd1790
@@ -144,11 +75,11 @@ void __fastcall triggerObject_H(GameObject* self, void*, GJBaseGameLayer* baseGa
         }
     }
     if (self->m_nObjectID == 1931 && !self->m_bEditor) {
-        PlayLayerMod::PlayLayerFromINit->levelComplete();
-        PlayLayerMod::PlayLayerFromINit->m_hasCompletedLevel = true;
-        PlayLayerMod::PlayLayerFromINit->moveCameraToPos({ self->m_obStartPosition.x - (CCDirector::sharedDirector()->getWinSize().width / 2), self->m_obStartPosition.y - (CCDirector::sharedDirector()->getWinSize().height / 2) });
+        PlayLayerExt::PlayLayerFromINit->levelComplete();
+        PlayLayerExt::PlayLayerFromINit->m_hasCompletedLevel = true;
+        PlayLayerExt::PlayLayerFromINit->moveCameraToPos({ self->m_obStartPosition.x - (CCDirector::sharedDirector()->getWinSize().width / 2), self->m_obStartPosition.y - (CCDirector::sharedDirector()->getWinSize().height / 2) });
         PlayerObj->m_playerSpeed = 0.0;
-        PlayLayerMod::PlayLayerFromINit->playExitDualEffect(PlayerObj);
+        PlayLayerExt::PlayLayerFromINit->playExitDualEffect(PlayerObj);
     }
     if (self->m_nObjectID == 1913) {
         float speed = 0.5;
@@ -157,7 +88,7 @@ void __fastcall triggerObject_H(GameObject* self, void*, GJBaseGameLayer* baseGa
     }
     if (self->m_nObjectID == 1934) {
         GameSoundManager::sharedState()->stopBackgroundMusic();
-        if (!self->m_bEditor && self->m_bRandomisedAnimStart) PlayLayerMod::PlayLayerFromINit->startMusic();
+        if (!self->m_bEditor && self->m_bRandomisedAnimStart) PlayLayerExt::PlayLayerFromINit->startMusic();
     }
 }
 
@@ -223,12 +154,16 @@ void __fastcall GameObject_customSetup_H(GameObject* self, int) {
         self->m_obBoxOffset = CCPoint(0, -10);
         self->m_obBoxOffset2 = CCPoint(0, -10);
     }
+
     if (self->m_sTextureName.find("pixelart_") != self->m_sTextureName.npos) {//any pixel art
+        self->m_nObjectType = kGameObjectTypeDecoration;
+    }
+    if (self->m_sTextureName.find("blockPiece_") != self->m_sTextureName.npos) {//any blockPiece
         self->m_nObjectType = kGameObjectTypeDecoration;
     }
 
     if (self->m_nObjectID == 2926) {//green portal
-        self->m_nObjectType = kGameObjectTypeInverseGravityPortal;//type
+        self->m_nObjectType = GameObjectType::kGameObjectTypeGreenRing;
         self->setAnchorPoint(CCPoint(self->getAnchorPoint().x - 0.1, self->getAnchorPoint().y - 0.001));// totally :smiling_face_with_tear:
         self->m_obObjectSize.setSize(25.000000, 75.000000);
         self->m_bIsEffectObject = true;
@@ -296,4 +231,54 @@ void CreateObjectsThemedHooks() {
     ObjectToolbox::sharedState()->addObject(3004, "spiderRing_001.png");
     ObjectToolbox::sharedState()->addObject(3005, "spiderBump_001.png");
     ObjectToolbox::sharedState()->addObject(2926, "portal_19_unity_001.png");
+
+    ObjectToolbox::sharedState()->addObject(1964, "blockPiece_001_001.png");
+    ObjectToolbox::sharedState()->addObject(1965, "blockPiece_002_001.png");
+    ObjectToolbox::sharedState()->addObject(1966, "blockPiece_003_001.png");
+    ObjectToolbox::sharedState()->addObject(1967, "blockPiece_004_001.png");
+    ObjectToolbox::sharedState()->addObject(1968, "blockPiece_005_001.png");
+    ObjectToolbox::sharedState()->addObject(1969, "blockPiece_006_001.png");
+    ObjectToolbox::sharedState()->addObject(1970, "blockPiece_007_001.png");
+    ObjectToolbox::sharedState()->addObject(1971, "blockPiece_008_001.png");
+    ObjectToolbox::sharedState()->addObject(1972, "blockPiece_009_001.png");
+    ObjectToolbox::sharedState()->addObject(1973, "blockPiece_010_001.png");
+    ObjectToolbox::sharedState()->addObject(1974, "blockPiece_011_001.png");
+    ObjectToolbox::sharedState()->addObject(1975, "blockPiece_012_001.png");
+    ObjectToolbox::sharedState()->addObject(1976, "blockPiece_013_001.png");
+    ObjectToolbox::sharedState()->addObject(1977, "blockPiece_014_001.png");
+    ObjectToolbox::sharedState()->addObject(1978, "blockPiece_015_001.png");
+    ObjectToolbox::sharedState()->addObject(1979, "blockPiece_016_001.png");
+    ObjectToolbox::sharedState()->addObject(1980, "blockPiece_017_001.png");
+    ObjectToolbox::sharedState()->addObject(1981, "blockPiece_018_001.png");
+    ObjectToolbox::sharedState()->addObject(1982, "blockPiece_019_001.png");
+    ObjectToolbox::sharedState()->addObject(1983, "blockPiece_020_001.png");
+    ObjectToolbox::sharedState()->addObject(1984, "blockPiece_021_001.png");
+    ObjectToolbox::sharedState()->addObject(1985, "blockPiece_022_001.png");
+    ObjectToolbox::sharedState()->addObject(1986, "blockPiece_023_001.png");
+    ObjectToolbox::sharedState()->addObject(1987, "blockPiece_024_001.png");
+
+    ObjectToolbox::sharedState()->addObject(1988, "blockPiece_small_001_001.png");
+    ObjectToolbox::sharedState()->addObject(1989, "blockPiece_small_002_001.png");
+    ObjectToolbox::sharedState()->addObject(1990, "blockPiece_small_003_001.png");
+    ObjectToolbox::sharedState()->addObject(1991, "blockPiece_small_004_001.png");
+    ObjectToolbox::sharedState()->addObject(1992, "blockPiece_small_005_001.png");
+    ObjectToolbox::sharedState()->addObject(1993, "blockPiece_small_006_001.png");
+    ObjectToolbox::sharedState()->addObject(1994, "blockPiece_small_007_001.png");
+    ObjectToolbox::sharedState()->addObject(1995, "blockPiece_small_008_001.png");
+    ObjectToolbox::sharedState()->addObject(1996, "blockPiece_small_009_001.png");
+    ObjectToolbox::sharedState()->addObject(1997, "blockPiece_small_010_001.png");
+    ObjectToolbox::sharedState()->addObject(1998, "blockPiece_small_011_001.png");
+    ObjectToolbox::sharedState()->addObject(1999, "blockPiece_small_012_001.png");
+    ObjectToolbox::sharedState()->addObject(2000, "blockPiece_small_013_001.png");
+    ObjectToolbox::sharedState()->addObject(2001, "blockPiece_small_014_001.png");
+    ObjectToolbox::sharedState()->addObject(2002, "blockPiece_small_015_001.png");
+    ObjectToolbox::sharedState()->addObject(2003, "blockPiece_small_016_001.png");
+    ObjectToolbox::sharedState()->addObject(2004, "blockPiece_small_017_001.png");
+    ObjectToolbox::sharedState()->addObject(2005, "blockPiece_small_018_001.png");
+    ObjectToolbox::sharedState()->addObject(2006, "blockPiece_small_019_001.png");
+    ObjectToolbox::sharedState()->addObject(2007, "blockPiece_small_020_001.png");
+    ObjectToolbox::sharedState()->addObject(2008, "blockPiece_small_021_001.png");
+    ObjectToolbox::sharedState()->addObject(2009, "blockPiece_small_022_001.png");
+    ObjectToolbox::sharedState()->addObject(2010, "blockPiece_small_023_001.png");
+    ObjectToolbox::sharedState()->addObject(2011, "blockPiece_small_024_001.png");
 }
