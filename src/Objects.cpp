@@ -11,7 +11,13 @@ void __fastcall GameObject_activateObject_H(GameObject* self, int, PlayerObject*
             player->toggleRobotMode(true);
             player->toggleFlyMode(true);
         }
-        else if (self->m_nObjectType != kGameObjectTypeNormalGravityPortal && self->m_nObjectType != kGameObjectTypeInverseGravityPortal && self->m_nObjectType != kGameObjectTypeTeleportPortal) {
+        else if (self->m_nObjectType == kGameObjectTypeShipPortal ||
+            self->m_nObjectType == kGameObjectTypeCubePortal || 
+            self->m_nObjectType == kGameObjectTypeBallPortal || 
+            self->m_nObjectType == kGameObjectTypeUfoPortal || 
+            self->m_nObjectType == kGameObjectTypeWavePortal || 
+            self->m_nObjectType == kGameObjectTypeRobotPortal || 
+            self->m_nObjectType == kGameObjectTypeSpiderPortal) {
             GameManager::sharedState()->setPlayerShip(GameManager::sharedState()->getIntGameVariable("oldShipIcon"));//bring up by oldShipIcon
             if (self->m_nObjectID == 13 && PlayLayerExt::isSwingCopterMode) {
                 player->toggleRobotMode(true);
@@ -26,7 +32,7 @@ void __fastcall GameObject_activateObject_H(GameObject* self, int, PlayerObject*
         {
             self->m_bHasBeenActivated = false; self->m_bHasBeenActivatedP2 = false;
         }
-        //animateOutGround
+        //freeMode
         if (self->m_fAnimSpeed > 0.49 && self->m_fAnimSpeed < 0.62)
             if (PlayLayerExt::PlayLayerFromINit && player->m_isInPlayLayer) {
                 PlayLayerExt::PlayLayerFromINit->animateOutGround(!self->m_bHasBeenActivated);

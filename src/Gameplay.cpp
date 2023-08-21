@@ -60,7 +60,6 @@ void __fastcall PlayLayer_resetLevel_H(PlayLayer* self) {
         PlayLayerExt::isSwingCopterMode = false;
     }
     PlayLayerExt::freeMode = false;
-    self->m_bIsDualMode = self->m_levelSettings->m_startDual;
     self->m_pObjectLayer->setScale(1.0);
     self->m_bottomGround->setScale(1.0);
     self->m_topGround->setScaleX(1.0);
@@ -143,7 +142,7 @@ void __fastcall bumpPlayer_H(GJBaseGameLayer* self, int, gd::PlayerObject* Playe
 static inline void update_swing_copter(gd::PlayerObject* __this, const float delta) {
     __this->setScaleY((fabs(__this->getScaleY())));
     __this->deactivateParticle();
-    *reinterpret_cast<double*>(reinterpret_cast<uintptr_t>(__this) + 0x528) = 0.8;
+    __this->m_gravity = 0.8;
 
     const auto _direction = __this->m_isUpsideDown ? -1.f : 1.f;
     const auto _size = (__this->m_vehicleSize != true) ? .85f : 1.f;
@@ -173,7 +172,7 @@ void  __fastcall  updateJump_H(gd::PlayerObject* __this, void*) {
     }
     //swincopter
     if (!PlayLayerExt::isSwingCopterMode) {
-        *reinterpret_cast<double*>(reinterpret_cast<uintptr_t>(__this) + 0x528) = 1.0;
+        if (__this->m_gravity == 0.8) __this->m_gravity = 0.958199;
         return updateJump(__this, delta);
     }
     return update_swing_copter(__this, delta);
